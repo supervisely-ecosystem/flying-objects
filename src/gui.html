@@ -25,7 +25,6 @@
                 <sly-select-dataset
                         v-show="!state.allDatasets"
                         :project-id="state.bgProjectId"
-                        :disabled="state.allDatasets"
                         :datasets.sync="state.bgDatasets"
                         :options="{'multiple': true}">
                 </sly-select-dataset>
