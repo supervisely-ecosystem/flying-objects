@@ -82,6 +82,7 @@ def main():
     state["workspaceId"] = workspace_id
     state["bgProjectId"] = None # project_id
     state["bgDatasets"] = []
+    state["allDatasets"] = True
 
     #classes tab
     init_classes_stats(app.public_api, data, state, project_info, meta)

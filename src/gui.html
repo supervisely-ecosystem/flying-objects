@@ -21,11 +21,15 @@
                         :workspace-id="state.workspaceId"
                         :project-id.sync="state.bgProjectId">
                 </sly-select-project>
+                <el-checkbox class="mt15" v-model="state.allDatasets">All datasets</el-checkbox>
                 <sly-select-dataset
+                        v-show="!state.allDatasets"
                         :project-id="state.bgProjectId"
+                        :disabled="state.allDatasets"
                         :datasets.sync="state.bgDatasets"
                         :options="{'multiple': true}">
                 </sly-select-dataset>
+
             </el-tab-pane>
             <el-tab-pane label="Classes" name="Classes">
                 <div v-if="data.classes.length === 0">Project does not have any classes</div>
@@ -56,10 +60,16 @@
             <el-tab-pane label="Augmentations" name="Augmentations">
                 <sly-editor v-model="state.augs" :options="{height: '500px', mode: 'ace/mode/yaml'}"></sly-editor>
             </el-tab-pane>
-<!--            <el-tab-pane label="Output" name="output">-->
-<!--                <div>Computer vision task...</div>-->
-<!--                <div>Project name...</div>-->
-<!--            </el-tab-pane>-->
         </el-tabs>
+    </sly-card>
+
+    <sly-card class="mt15"
+              title="Random preview"
+              subtitle="Preview synthetic image and labels">
+        <div slot="header">
+            <el-button type="primary" @click="command('preview')">
+                <i class="zmdi zmdi-slideshow" style="margin-right: 5px"></i> Preview
+            </el-button>
+        </div>
     </sly-card>
 </div>
