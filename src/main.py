@@ -85,12 +85,35 @@ def main():
 
     #classes tab
     init_classes_stats(app.public_api, data, state, project_info, meta)
-    #state["classesInfo"] = meta.obj_classes.to_json()
-    #state["classes"] = [True] * len(state["classesInfo"])
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 
 #@TODO: raise error Project does not have any classes
+#@TODO: object settings
+# - number of objects on image (range) per class /// for all classes
+# - scale range - per class /// for all classes
+
+#@TODO: fg augmentations
+# - foreground color augmentations (yaml)
+#    - brightness
+#    - contrast
+#    - rotation
+#    - blur
+# - foreground spacial augmentations
+#    - scale
+#    - grid distortion
+#    - elastic
+#    - flip
+#    - rotate
+#    - random crop
+#    - ...
+
+#@TODO: background augmentations
+
+#@TODO later:
+# - result augmentations (yaml) -
+
+
 if __name__ == "__main__":
     sly.main_wrapper("main", main)

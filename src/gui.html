@@ -8,7 +8,10 @@
         </sly-field>
     </sly-card>
 
-    <sly-card class="mt15" title="Settings" subtitle="Configure parameters of synthetic data generation">
+    <sly-card class="mt15"
+              title="Settings"
+              subtitle="Configure parameters of synthetic data generation"
+              style="height: 410px">
         <el-tabs v-model="state.tabName">
             <el-tab-pane label="Backgrounds" name="Backgrounds">
                 <sly-select-team-workspace
@@ -52,8 +55,9 @@
                     </el-table>
                 </div>
             </el-tab-pane>
-            <el-tab-pane label="Objects" name="Objects">Objects</el-tab-pane>
-            <el-tab-pane label="Augmentations" name="Augs">Augs</el-tab-pane>
+            <el-tab-pane label="Augmentations" name="Augs">
+                123
+            </el-tab-pane>
         </el-tabs>
     </sly-card>
 </div>

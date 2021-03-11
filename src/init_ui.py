@@ -24,5 +24,4 @@ def init_classes_stats(api: sly.Api, data: dict, state: dict, project_info, proj
 
     data["classes"] = classes_json
     state["selectedClasses"] = []
-
     state["classes"] = len(classes_json) * [True]
