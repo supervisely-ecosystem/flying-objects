@@ -12,7 +12,7 @@ project_info = app.public_api.project.get_info_by_id(project_id)
 if project_info is None:
     raise RuntimeError(f"Project id={project_id} not found")
 
-meta: sly.ProjectMeta = sly.ProjectMeta(app.public_api.project.get_meta(project_id))
+meta = sly.ProjectMeta.from_json(app.public_api.project.get_meta(project_id))
 anns = {}
 
 
@@ -37,9 +37,9 @@ anns = {}
 # gallery2tag = {}
 
 
-@app.callback("init")
+@app.callback("cache_annotations")
 @sly.timeit
-def init(api: sly.Api, task_id, context, state, app_logger):
+def cache_annotations(api: sly.Api, task_id, context, state, app_logger):
     progress = sly.Progress("Cache annotations", project_info.items_count)
     for dataset in api.dataset.get_list(project_id):
         images = api.image.get_list(dataset.id)
@@ -52,10 +52,22 @@ def init(api: sly.Api, task_id, context, state, app_logger):
         progress.iters_done_report(len(batch))
 
 
-@app.callback("assign_tag")
+@app.callback("preview_random")
 @sly.timeit
-def assign_tag(api: sly.Api, task_id, context, state, app_logger):
+def preview_random(api: sly.Api, task_id, context, state, app_logger):
     pass
+
+
+@app.callback("select_all_classes")
+@sly.timeit
+def select_all_classes(api: sly.Api, task_id, context, state, app_logger):
+    api.task.set_field(task_id, "state.classes", [True] * len(meta.obj_classes))
+
+
+@app.callback("deselect_all_classes")
+@sly.timeit
+def deselect_all_classes(api: sly.Api, task_id, context, state, app_logger):
+    api.task.set_field(task_id, "state.classes", [False] * len(meta.obj_classes))
 
 
 def main():
@@ -64,7 +76,18 @@ def main():
 
     init_input_project(app.public_api, data, project_info)
 
-    app.run(data=data, state=state, initial_events=[{"command": "init"}])
+    # background tab
+    state["tabName"] = "Backgrounds"
+    state["teamId"] = team_id
+    state["workspaceId"] = workspace_id
+    state["bgProjectId"] = project_id
+    state["bgDatasets"] = []
+
+    #classes tab
+    state["classesInfo"] = meta.obj_classes.to_json()
+    state["classes"] = [True] * len(state["classesInfo"])
+
+    app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 
 if __name__ == "__main__":

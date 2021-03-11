@@ -7,4 +7,53 @@
             <sly-icon slot="icon" :options="{ imageUrl: `${data.projectPreviewUrl}` }"/>
         </sly-field>
     </sly-card>
+
+    <sly-card class="mt15" title="Settings" subtitle="Configure parameters of synthetic data generation">
+        <el-tabs v-model="state.tabName">
+            <el-tab-pane label="Backgrounds" name="Backgrounds">
+                <sly-select-team-workspace
+                        :team-id.sync="state.teamId"
+                        :workspace-id.sync="state.workspaceId">
+                </sly-select-team-workspace>
+                <sly-select-project
+                        :workspace-id="state.workspaceId"
+                        :project-id.sync="state.bgProjectId">
+                </sly-select-project>
+                <sly-select-dataset
+                        :project-id="state.bgProjectId"
+                        :datasets.sync="state.bgDatasets"
+                        :options="{'multiple': true}">
+                </sly-select-dataset>
+            </el-tab-pane>
+            <el-tab-pane label="Classes" name="Classes">
+                <div v-if="state.classesInfo.length === 0">Model does not produce classes</div>
+                <div v-if="state.classesInfo.length > 0">
+                    <div class="fflex">
+                        <el-button type="text" @click="command('select_all_classes');">
+                            <i class="zmdi zmdi-check-all"></i> Select all
+                        </el-button>
+                        <el-button type="text" @click="command('deselect_all_classes');"
+                                   style="margin-left: 25px;">
+                            <i class="zmdi zmdi-square-o"></i> Deselect all
+                        </el-button>
+                    </div>
+                    <table>
+                        <tbody>
+                        <tr v-for="(objClass, index) in state.classesInfo">
+                            <td>
+                                <el-checkbox v-model="state.classes[index]"></el-checkbox>
+                            </td>
+                            <td><i class="zmdi zmdi-circle ml5 mr5" :style="{color: objClass.color}"></i>
+                            </td>
+                            <td>{{objClass.title}}</td>
+                            <td class="ml5" style="color: #777777">{{objClass.shape}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </el-tab-pane>
+            <el-tab-pane label="Objects" name="Objects">Objects</el-tab-pane>
+            <el-tab-pane label="Augs" name="Augs">Augs</el-tab-pane>
+        </el-tabs>
+    </sly-card>
 </div>
