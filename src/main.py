@@ -1,6 +1,6 @@
 import os
 import supervisely_lib as sly
-from init_ui import init_input_project, init_classes_stats
+from init_ui import init_input_project, init_classes_stats, init_augs
 
 app: sly.AppService = sly.AppService()
 
@@ -80,19 +80,27 @@ def main():
     state["tabName"] = "Backgrounds"
     state["teamId"] = team_id
     state["workspaceId"] = workspace_id
-    state["bgProjectId"] = project_id
+    state["bgProjectId"] = None # project_id
     state["bgDatasets"] = []
 
     #classes tab
     init_classes_stats(app.public_api, data, state, project_info, meta)
 
+    #augmentations tab
+    init_augs(state)
+
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 
 #@TODO: raise error Project does not have any classes
+#@TODO: background - all datasets
+
 #@TODO: object settings
 # - number of objects on image (range) per class /// for all classes
 # - scale range - per class /// for all classes
+
+#@TODO: bg-fg resolution ???
+
 
 #@TODO: fg augmentations
 # - foreground color augmentations (yaml)
@@ -113,7 +121,8 @@ def main():
 
 #@TODO later:
 # - result augmentations (yaml) -
+# output project and task
 
-
+# https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
 if __name__ == "__main__":
     sly.main_wrapper("main", main)

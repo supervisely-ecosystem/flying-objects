@@ -1,3 +1,8 @@
+import os
+import yaml
+from pathlib import Path
+import sys
+import json
 import supervisely_lib as sly
 
 
@@ -25,3 +30,13 @@ def init_classes_stats(api: sly.Api, data: dict, state: dict, project_info, proj
     data["classes"] = classes_json
     state["selectedClasses"] = []
     state["classes"] = len(classes_json) * [True]
+
+
+def init_augs(state: dict):
+    root_source_path = str(Path(sys.argv[0]).parents[0])
+    with open(os.path.join(root_source_path, "augs.yaml"), 'r') as file:
+        augs_str = file.read()
+    state["augs"] = augs_str
+
+    d = yaml.safe_load(augs_str)
+    print(json.dumps(d, indent=4))
