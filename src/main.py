@@ -13,28 +13,32 @@ if project_info is None:
     raise RuntimeError(f"Project id={project_id} not found")
 
 meta = sly.ProjectMeta.from_json(app.public_api.project.get_meta(project_id))
+if len(meta.obj_classes) == 0:
+    raise ValueError("Project should have at least one class")
+
 anns = {}
 
+background_datasets = []
+background_images = []
 
-# CNT_GRID_COLUMNS = 3
-# gallery = {
-#     "content": {
-#         "projectMeta": sly.ProjectMeta().to_json(),
-#         "annotations": {},
-#         "layout": [[] for i in range(CNT_GRID_COLUMNS)]
-#     },
-#     "previewOptions": {
-#         "enableZoom": True,
-#         "resizeOnZoom": True
-#     },
-#     "options": {
-#         "enableZoom": False,
-#         "syncViews": False,
-#         "showPreview": True,
-#         "selectable": True
-#     }
-# }
-# gallery2tag = {}
+CNT_GRID_COLUMNS = 1
+empty_gallery = {
+    "content": {
+        "projectMeta": sly.ProjectMeta().to_json(),
+        "annotations": {},
+        "layout": [[] for i in range(CNT_GRID_COLUMNS)]
+    },
+    "previewOptions": {
+        "enableZoom": True,
+        "resizeOnZoom": True
+    },
+    "options": {
+        "enableZoom": True,
+        "syncViews": False,
+        "showPreview": True,
+        "selectable": False
+    }
+}
 
 
 @app.callback("cache_annotations")
@@ -52,12 +56,6 @@ def cache_annotations(api: sly.Api, task_id, context, state, app_logger):
         progress.iters_done_report(len(batch))
 
 
-@app.callback("preview_random")
-@sly.timeit
-def preview_random(api: sly.Api, task_id, context, state, app_logger):
-    pass
-
-
 @app.callback("select_all_classes")
 @sly.timeit
 def select_all_classes(api: sly.Api, task_id, context, state, app_logger):
@@ -68,6 +66,14 @@ def select_all_classes(api: sly.Api, task_id, context, state, app_logger):
 @sly.timeit
 def deselect_all_classes(api: sly.Api, task_id, context, state, app_logger):
     api.task.set_field(task_id, "state.classes", [False] * len(meta.obj_classes))
+
+
+@app.callback("preview_random")
+@sly.timeit
+def preview_random(api: sly.Api, task_id, context, state, app_logger):
+    bg_project_id = state["bgProjectId"]
+    if bg_project_id is None:
+        return
 
 
 def main():
@@ -90,34 +96,13 @@ def main():
     #augmentations tab
     init_augs(state)
 
+    # gallery
+    data["gallery"] = empty_gallery
+
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 
 #@TODO: raise error Project does not have any classes
-#@TODO: background - all datasets
-
-#@TODO: object settings
-# - number of objects on image (range) per class /// for all classes
-# - scale range - per class /// for all classes
-
-#@TODO: bg-fg resolution ???
-
-
-#@TODO: fg augmentations
-# - foreground color augmentations (yaml)
-#    - brightness
-#    - contrast
-#    - rotation
-#    - blur
-# - foreground spacial augmentations
-#    - scale
-#    - grid distortion
-#    - elastic
-#    - flip
-#    - rotate
-#    - random crop
-#    - ...
-
 #@TODO: background augmentations
 
 #@TODO later:

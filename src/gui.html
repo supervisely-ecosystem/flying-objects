@@ -57,7 +57,7 @@
                 </div>
             </el-tab-pane>
             <el-tab-pane label="Augmentations" name="Augmentations">
-                <sly-editor v-model="state.augs" :options="{height: '500px', mode: 'ace/mode/yaml'}"></sly-editor>
+                <sly-editor v-model="state.augs" :options="{height: '600px', mode: 'ace/mode/yaml'}"></sly-editor>
             </el-tab-pane>
         </el-tabs>
     </sly-card>
@@ -70,5 +70,10 @@
                 <i class="zmdi zmdi-slideshow" style="margin-right: 5px"></i> Preview
             </el-button>
         </div>
+        <sly-grid-gallery
+                v-show="Object.keys(data.gallery.content.annotations).length > 0"
+                :content="data.gallery.content"
+                :options="data.gallery.options"/>
+        <div v-show="Object.keys(data.gallery.content.annotations).length === 0">Gallery is empty</div>
     </sly-card>
 </div>

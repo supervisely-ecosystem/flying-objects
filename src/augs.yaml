@@ -10,11 +10,22 @@ objects:
       HueSaturationValue: true
       Blur: false
     spacial:
-      VerticalFlip: false # flip up-down
-      HorizontalFlip: true # flip left-right
-      Flip: false # flip the input either horizontally, vertically or both horizontally and vertically
-      RandomScale: [ 0.7, 1.5 ] # use false to disable
-      Rotate: [-90, 90] # use false to disable
+      # flip up-down
+      VerticalFlip: false
+
+      # flip left-right
+      HorizontalFlip: true
+
+      # flip the input either horizontally, vertically or both horizontally and vertically
+      Flip: false
+
+      RandomScale: [ 0.7, 1.5 ]
+      #RandomScale: false # how to disable
+
+      # use false to disable
+      Rotate: [-90, 90]
+      #Rotate: false # how to disable
+
 
 # Background image augmentations (coming soon)
 # background: false
