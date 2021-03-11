@@ -66,7 +66,13 @@
               title="Random preview"
               subtitle="Preview synthetic image and labels">
         <div slot="header">
-            <el-button type="primary" @click="command('preview')">
+            <el-button
+                    type="primary"
+                    @click="command('preview')"
+                    :disabled="state.selectedClasses.filter(Boolean).length === 0 ||
+                               !state.bgProjectId ||
+                               (state.allDatasets === false && state.bgDatasets.length === 0)"
+            >
                 <i class="zmdi zmdi-slideshow" style="margin-right: 5px"></i> Preview
             </el-button>
         </div>
