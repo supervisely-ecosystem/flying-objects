@@ -39,6 +39,16 @@ def update_bg_images(api, state):
     return bg_images
 
 
+def get_label_foreground(img, label):
+    bbox = label.geometry.to_bbox()
+    img_crop = sly.image.crop(img, bbox)
+    new_label = label.translate(drow=-bbox.top, dcol=-bbox.left)
+    h, w = img_crop.shape[0], img_crop.shape[1]
+    mask = np.zeros((h, w, 3), np.uint8)
+    new_label.draw(mask, [255, 255, 255])
+    return img_crop, mask
+
+
 def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, labels, bg_images):
     augs = yaml.safe_load(state["augs"])
     classes = state["selectedClasses"]
@@ -60,21 +70,13 @@ def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, label
     for class_name in to_generate:
         if class_name not in labels:
             continue
-        image_ids = list(labels[class_name].keys())
-        image_id = random.choice(image_ids)
+        image_id = random.choice(list(labels[class_name].keys()))
         label: sly.Label = random.choice(labels[class_name][image_id])
-        bbox = label.geometry.to_bbox()
 
-        fg = api.image.download_np(image_id)
+        source_image = api.image.download_np(image_id)
 
-        # crop object and image
-        object_crop = sly.image.crop(fg, bbox)
-        new_label = label.translate(drow=-bbox.top, dcol=-bbox.left)
-        h, w = object_crop.shape[0], object_crop.shape[1]
-        mask = np.zeros((h, w, 3), np.uint8)
-        new_label.draw(mask, [255, 255, 255])
-
-
-        sly.image.write(os.path.join(vis_dir, "obj.png"), mask)
+        label_img, label_mask = get_label_foreground(source_image, label)
+        sly.image.write(os.path.join(vis_dir, "label_img.png"), label_img)
+        sly.image.write(os.path.join(vis_dir, "label_mask.png"), label_mask)
 
     pass
