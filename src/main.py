@@ -1,6 +1,9 @@
 import os
+from collections import defaultdict
 import supervisely_lib as sly
+
 from init_ui import init_input_project, init_classes_stats, init_augs
+from generate import update_bg_images, synthesize
 
 app: sly.AppService = sly.AppService()
 
@@ -16,10 +19,10 @@ meta = sly.ProjectMeta.from_json(app.public_api.project.get_meta(project_id))
 if len(meta.obj_classes) == 0:
     raise ValueError("Project should have at least one class")
 
+images_info = {}
 anns = {}
+labels = defaultdict(lambda: defaultdict(list))
 
-background_datasets = []
-background_images = []
 
 CNT_GRID_COLUMNS = 1
 empty_gallery = {
@@ -47,12 +50,15 @@ def cache_annotations(api: sly.Api, task_id, context, state, app_logger):
     progress = sly.Progress("Cache annotations", project_info.items_count)
     for dataset in api.dataset.get_list(project_id):
         images = api.image.get_list(dataset.id)
-        image_ids = [image_info.id for image_info in images]
-        for batch in sly.batched(image_ids):
-            ann_infos = api.annotation.download_batch(dataset.id, batch)
-            for image_id, ann_info in zip(batch, ann_infos):
+        for batch in sly.batched(images):
+            image_ids = [image_info.id for image_info in batch]
+            ann_infos = api.annotation.download_batch(dataset.id, image_ids)
+            for image_id, image_info, ann_info in zip(image_ids, batch, ann_infos):
                 ann = sly.Annotation.from_json(ann_info.annotation, meta)
                 anns[image_id] = ann
+                images_info[image_id] = image_info
+                for label in ann.labels:
+                    labels[label.obj_class.name][image_id].append(label)
         progress.iters_done_report(len(batch))
 
 
@@ -68,12 +74,20 @@ def deselect_all_classes(api: sly.Api, task_id, context, state, app_logger):
     api.task.set_field(task_id, "state.classes", [False] * len(meta.obj_classes))
 
 
-@app.callback("preview_random")
+@app.callback("preview")
 @sly.timeit
-def preview_random(api: sly.Api, task_id, context, state, app_logger):
-    bg_project_id = state["bgProjectId"]
-    if bg_project_id is None:
-        return
+def preview(api: sly.Api, task_id, context, state, app_logger):
+    bg_images = update_bg_images(api, state)
+
+    if len(bg_images) == 0:
+        sly.logger.warn("There are no background images")
+    else:
+        img, ann = synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images)
+
+    fields = [
+        {"field": "state.previewLoading", "payload": False},
+    ]
+    api.task.set_fields(task_id, fields)
 
 
 def main():
@@ -98,17 +112,22 @@ def main():
 
     # gallery
     data["gallery"] = empty_gallery
+    state["previewLoading"] = False
+
+    # ONLY for debug
+    state["bgProjectId"] = project_id
+    state["bgDatasets"] = ["01_background"]
+    state["allDatasets"] = False
+    state["tabName"] = "Classes"
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 
-#@TODO: raise error Project does not have any classes
-#@TODO: background augmentations
-
-#@TODO later:
-# - result augmentations (yaml) -
-# output project and task
-
-# https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
+#@TODO: cache images and then clear cache on finish
+#@TODO: validate augmentations - or get default value from original config if key not found
+#@TODO: check sum of objects for selected classes - disable buttons
+#@TODO: rasterize labels before use this app
+#@TODO output project and task type
+# @TODO: semi-automatic augs builder # https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
 if __name__ == "__main__":
     sly.main_wrapper("main", main)

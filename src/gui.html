@@ -68,10 +68,11 @@
         <div slot="header">
             <el-button
                     type="primary"
-                    @click="command('preview')"
+                    @click="state.previewLoading = true; command('preview')"
                     :disabled="state.selectedClasses.filter(Boolean).length === 0 ||
                                !state.bgProjectId ||
                                (state.allDatasets === false && state.bgDatasets.length === 0)"
+                    :loading="state.previewLoading"
             >
                 <i class="zmdi zmdi-slideshow" style="margin-right: 5px"></i> Preview
             </el-button>
