@@ -1,22 +1,18 @@
 {
-  "name": "Visual Tagging",
+  "name": "Flying objects",
   "type": "app",
   "categories": [
-    "tagging"
+    "synthetic data"
   ],
-  "description": "Assign tags to images using example images",
+  "description": "Generate synthetic data: flying foregrounds on top of backgrounds",
   "docker_image": "supervisely/base-py-sdk:6.1.58",
   "main_script": "src/main.py",
   "gui_template": "src/gui.html",
-  "task_location": "application_sessions",
+  "task_location": "workspace_tasks",
   "isolate": true,
-  "integrated_into": ["image_annotation_tool"],
-  "icon": "https://img.icons8.com/color/100/000000/medium-icons.png",
+  "icon": "https://img.icons8.com/color/100/000000/snitch.png",
   "icon_background": "#FFFFFF",
   "context_menu": {
     "target": ["images_project"]
-  },
-  "hotkeys": [
-      {"hotkey": "alt+t", "command": "assign_tag"}
-  ]
+  }
 }

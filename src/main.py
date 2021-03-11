@@ -1,10 +1,8 @@
 import os
-from collections import defaultdict
 import supervisely_lib as sly
 from init_ui import init_input_project
 
 app: sly.AppService = sly.AppService()
-app.public_api
 
 team_id = int(os.environ['context.teamId'])
 workspace_id = int(os.environ['context.workspaceId'])
@@ -47,11 +45,11 @@ def init(api: sly.Api, task_id, context, state, app_logger):
         images = api.image.get_list(dataset.id)
         image_ids = [image_info.id for image_info in images]
         for batch in sly.batched(image_ids):
-            ann_jsons = api.annotation.download_batch(dataset.id, batch)
-            for image_id, ann_json in zip(batch, ann_jsons):
-                ann = sly.Annotation.from_json(ann_json, meta)
+            ann_infos = api.annotation.download_batch(dataset.id, batch)
+            for image_id, ann_info in zip(batch, ann_infos):
+                ann = sly.Annotation.from_json(ann_info.annotation, meta)
                 anns[image_id] = ann
-        progress.iters_done_report(batch)
+        progress.iters_done_report(len(batch))
 
 
 @app.callback("assign_tag")
