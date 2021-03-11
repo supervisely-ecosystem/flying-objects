@@ -1,6 +1,6 @@
 import os
 import supervisely_lib as sly
-from init_ui import init_input_project
+from init_ui import init_input_project, init_classes_stats
 
 app: sly.AppService = sly.AppService()
 
@@ -84,11 +84,13 @@ def main():
     state["bgDatasets"] = []
 
     #classes tab
-    state["classesInfo"] = meta.obj_classes.to_json()
-    state["classes"] = [True] * len(state["classesInfo"])
+    init_classes_stats(app.public_api, data, state, project_info, meta)
+    #state["classesInfo"] = meta.obj_classes.to_json()
+    #state["classes"] = [True] * len(state["classesInfo"])
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 
+#@TODO: raise error Project does not have any classes
 if __name__ == "__main__":
     sly.main_wrapper("main", main)

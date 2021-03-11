@@ -26,30 +26,31 @@
                 </sly-select-dataset>
             </el-tab-pane>
             <el-tab-pane label="Classes" name="Classes">
-                <div v-if="state.classesInfo.length === 0">Model does not produce classes</div>
-                <div v-if="state.classesInfo.length > 0">
-                    <div class="fflex">
-                        <el-button type="text" @click="command('select_all_classes');">
-                            <i class="zmdi zmdi-check-all"></i> Select all
-                        </el-button>
-                        <el-button type="text" @click="command('deselect_all_classes');"
-                                   style="margin-left: 25px;">
-                            <i class="zmdi zmdi-square-o"></i> Deselect all
-                        </el-button>
-                    </div>
-                    <table>
-                        <tbody>
-                        <tr v-for="(objClass, index) in state.classesInfo">
-                            <td>
-                                <el-checkbox v-model="state.classes[index]"></el-checkbox>
-                            </td>
-                            <td><i class="zmdi zmdi-circle ml5 mr5" :style="{color: objClass.color}"></i>
-                            </td>
-                            <td>{{objClass.title}}</td>
-                            <td class="ml5" style="color: #777777">{{objClass.shape}}</td>
-                        </tr>
-                        </tbody>
-                    </table>
+                <div v-if="data.classes.length === 0">Project does not have any classes</div>
+                <div v-if="data.classes.length > 0">
+                    <el-table
+                            class="ultra-table"
+                            :data="data.classes"
+                            style="width: 100%"
+                            max-height="500"
+                            @selection-change="
+                (val) => {
+                    state.selectedClasses = val.map(x => x.title);
+                }
+                "
+                    >
+                        <el-table-column type="selection" width="55"></el-table-column>
+                        <el-table-column label="Name" prop="title" sortable>
+                            <template scope="scope">
+                                <i class="zmdi zmdi-circle mr5" :style="{color: scope.row.color}"></i>
+                                {{ scope.row.title }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="shape" label="Shape" sortable width="180"></el-table-column>
+                        <el-table-column prop="imagesCount" label="Images count" sortable width="150"></el-table-column>
+                        <el-table-column prop="objectsCount" label="Objects count" sortable
+                                         width="180"></el-table-column>
+                    </el-table>
                 </div>
             </el-tab-pane>
             <el-tab-pane label="Objects" name="Objects">Objects</el-tab-pane>
