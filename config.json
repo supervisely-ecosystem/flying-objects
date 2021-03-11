@@ -1,0 +1,22 @@
+{
+  "name": "Visual Tagging",
+  "type": "app",
+  "categories": [
+    "tagging"
+  ],
+  "description": "Assign tags to images using example images",
+  "docker_image": "supervisely/base-py-sdk:6.1.58",
+  "main_script": "src/main.py",
+  "gui_template": "src/gui.html",
+  "task_location": "application_sessions",
+  "isolate": true,
+  "integrated_into": ["image_annotation_tool"],
+  "icon": "https://img.icons8.com/color/100/000000/medium-icons.png",
+  "icon_background": "#FFFFFF",
+  "context_menu": {
+    "target": ["images_project"]
+  },
+  "hotkeys": [
+      {"hotkey": "alt+t", "command": "assign_tag"}
+  ]
+}
