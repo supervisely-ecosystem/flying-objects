@@ -46,15 +46,14 @@
                                 {{ scope.row.title }}
                             </template>
                         </el-table-column>
-                        <el-table-column prop="shape" label="Shape" sortable width="180"></el-table-column>
-                        <el-table-column prop="imagesCount" label="Images count" sortable width="150"></el-table-column>
-                        <el-table-column prop="objectsCount" label="Objects count" sortable
-                                         width="180"></el-table-column>
+                        <el-table-column prop="shape" label="Shape" sortable></el-table-column>
+                        <el-table-column prop="imagesCount" label="Images" sortable></el-table-column>
+                        <el-table-column prop="objectsCount" label="Objects" sortable></el-table-column>
                     </el-table>
                 </div>
             </el-tab-pane>
             <el-tab-pane label="Objects" name="Objects">Objects</el-tab-pane>
-            <el-tab-pane label="Augs" name="Augs">Augs</el-tab-pane>
+            <el-tab-pane label="Augmentations" name="Augs">Augs</el-tab-pane>
         </el-tabs>
     </sly-card>
 </div>
