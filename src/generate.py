@@ -97,18 +97,21 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
         source_image = api.image.download_np(image_id)
 
         label_img, label_mask = get_label_foreground(source_image, label)
-        sly.image.write(os.path.join(vis_dir, f"{index}_label_img.png"), label_img)
-        sly.image.write(os.path.join(vis_dir, f"{index}_label_mask.png"), label_mask)
+        #sly.image.write(os.path.join(vis_dir, f"{index}_label_img.png"), label_img)
+        #sly.image.write(os.path.join(vis_dir, f"{index}_label_mask.png"), label_mask)
 
         label_img, label_mask = aug.apply_to_foreground(label_img, label_mask)
-        sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_img.png"), label_img)
-        sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_mask.png"), label_mask)
+        #sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_img.png"), label_img)
+        #sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_mask.png"), label_mask)
 
         origin = aug.find_origin(res_image.shape, label_mask.shape)
         g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
         res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
 
+        aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
         index += 1
+
+    sly.image.write(os.path.join(vis_dir, f"__res_img.png"), res_image)
 
     res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
     res_ann.draw(res_image)

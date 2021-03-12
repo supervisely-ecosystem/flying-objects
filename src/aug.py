@@ -1,4 +1,4 @@
-import imgaug as ia
+import cv2
 import random
 import imgaug.augmenters as iaa
 from imgaug.augmentables.segmaps import SegmentationMapsOnImage
@@ -102,3 +102,10 @@ def find_origin(image_shape, mask_shape):
     x = random.randint(0, iw - mw - 1)
     y = random.randint(0, ih - mh - 1)
     return (x, y)
+
+
+def place_fg_to_bg(fg, fg_mask, bg, x, y):
+    sec_h, sec_w, _ = fg.shape
+    secondary_object = cv2.bitwise_and(fg, fg_mask)
+    secondary_bg = 255 - fg_mask
+    bg[y:y+sec_h, x:x+sec_w, :] = cv2.bitwise_and(bg[y:y+sec_h, x:x+sec_w, :], secondary_bg) + secondary_object
