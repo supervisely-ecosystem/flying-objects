@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 import supervisely_lib as sly
 
-from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project, refresh_progress
+from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project, refresh_progress_images
 from generate import update_bg_images, synthesize
 from postprocess import postprocess
 
@@ -148,10 +148,15 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
             if progress.need_report():
                 refresh_progress_images(api, task_id, progress)
 
+    res_project = api.project.get_info_by_id(res_project.id)
     fields = [
         {"field": "data.started", "payload": False},
+        {"field": "data.resProjectId", "payload": res_project.id},
+        {"field": "data.resProjectName", "payload": res_project.name},
+        {"field": "data.resProjectPreviewUrl", "payload": api.image.preview_url(res_project.reference_image_url, 100, 100)},
     ]
     api.task.set_fields(task_id, fields)
+    app.stop()
 
 
 def main():
@@ -192,10 +197,7 @@ def main():
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
-#@TODO: speed - chache images
-# https://pypi.org/project/expiringdict/
-# or https://cachetools.readthedocs.io/en/stable/
-
+#@TODO: need fix - one object completely covers another one (https://i.imgur.com/WC176Zz.png)
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user
 #@TODO: validate augmentations - or get default value from original config if key not found
@@ -204,5 +206,8 @@ def main():
 #@TODO: output project and task type
 # @TODO: semi-automatic augs builder # https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
 # https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
+#@TODO: speed - chache images
+# https://pypi.org/project/expiringdict/
+# or https://cachetools.readthedocs.io/en/stable/
 if __name__ == "__main__":
     sly.main_wrapper("main", main)

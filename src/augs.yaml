@@ -2,7 +2,7 @@
 # comment augmentation to disable it
 
 objects:
-  count: [0, 5] # number of objects (range) per image for every class
+  count: [1, 5] # number of objects (range) per image for every class
   augs:
     color:
       RandomBrightnessContrast: true
