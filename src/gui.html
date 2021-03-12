@@ -77,8 +77,12 @@
                 <i class="zmdi zmdi-slideshow" style="margin-right: 5px"></i> Preview
             </el-button>
         </div>
+        <div class="fflex" v-show="state.previewLoading">
+            <el-progress :percentage="data.progressPercent" style="flex: 1;"></el-progress>
+            <div>{{data.progressCurrent}} / {{data.progressTotal}}</div>
+        </div>
         <sly-grid-gallery
-                v-show="Object.keys(data.gallery.content.annotations).length > 0"
+                v-show="Object.keys(data.gallery.content.annotations).length > 0 && !state.previewLoading"
                 :content="data.gallery.content"
                 :options="data.gallery.options"/>
         <div v-show="Object.keys(data.gallery.content.annotations).length === 0">Gallery is empty</div>

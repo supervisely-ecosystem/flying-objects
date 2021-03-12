@@ -40,3 +40,19 @@ def init_augs(state: dict):
 
     d = yaml.safe_load(augs_str)
     print(json.dumps(d, indent=4))
+
+
+def init_progress(data):
+    data["progressPercent"] = 0
+    data["progressCurrent"] = 0
+    data["progressTotal"] = 0
+
+
+def refresh_progress(api: sly.Api, task_id, progress: sly.Progress):
+    fields = [
+        {"field": "data.progressPercent", "payload": int(progress.current * 100 / progress.total)},
+        {"field": "data.progressCurrent", "payload": progress.current},
+        {"field": "data.progressTotal", "payload": progress.total},
+    ]
+    api.task.set_fields(task_id, fields)
+

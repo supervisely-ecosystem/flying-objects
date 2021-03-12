@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 import supervisely_lib as sly
 
-from init_ui import init_input_project, init_classes_stats, init_augs
+from init_ui import init_input_project, init_classes_stats, init_augs, init_progress
 from generate import update_bg_images, synthesize
 
 app: sly.AppService = sly.AppService()
@@ -36,10 +36,11 @@ empty_gallery = {
         "resizeOnZoom": True
     },
     "options": {
-        "enableZoom": True,
+        "enableZoom": False,
         "syncViews": False,
         "showPreview": True,
-        "selectable": False
+        "selectable": False,
+        "opacity": 0.5
     }
 }
 
@@ -85,17 +86,29 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         cache_dir = os.path.join(app.data_dir, "cache_images")
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
-        img, ann = synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images, cache_dir)
+        img, ann, res_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
 
         src_img_path = os.path.join(cache_dir, "res.png")
         dst_img_path = os.path.join(f"/flying_object/{task_id}", "res.png")
         sly.image.write(src_img_path, img)
 
+        file_info = None
         if api.file.exists(team_id, dst_img_path):
             api.file.remove(team_id, dst_img_path)
-            api.file.upload(team_id, src_img_path, dst_img_path)
+            file_info = api.file.upload(team_id, src_img_path, dst_img_path)
+
+        gallery = dict(empty_gallery)
+        gallery["content"]["projectMeta"] = res_meta.to_json()
+        gallery["content"]["annotations"] = {
+            "preview": {
+                "url": file_info.full_storage_url,
+                "figures": [label.to_json() for label in ann.labels]
+            }
+        }
+        gallery["content"]["layout"] = [["preview"]]
 
     fields = [
+        {"field": "data.gallery", "payload": gallery},
         {"field": "state.previewLoading", "payload": False},
     ]
     api.task.set_fields(task_id, fields)
@@ -125,7 +138,9 @@ def main():
     data["gallery"] = empty_gallery
     state["previewLoading"] = False
 
-    # ONLY for debug
+    init_progress(data)
+
+    #@TODO: ONLY for debug
     state["bgProjectId"] = project_id
     state["bgDatasets"] = ["01_background"]
     state["allDatasets"] = False
@@ -135,11 +150,10 @@ def main():
 
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user
-#@TODO: cache images and then clear cache on finish
 #@TODO: validate augmentations - or get default value from original config if key not found
 #@TODO: check sum of objects for selected classes - disable buttons
 #@TODO: rasterize labels before use this app
-#@TODO output project and task type
+#@TODO: output project and task type
 # @TODO: semi-automatic augs builder # https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
 # https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
 if __name__ == "__main__":

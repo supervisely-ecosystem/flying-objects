@@ -5,6 +5,7 @@ import numpy as np
 import os
 
 import aug
+from init_ui import refresh_progress
 
 bg_project_id = None
 bg_datasets = None
@@ -37,6 +38,7 @@ def update_bg_images(api, state):
     return bg_images
 
 
+@sly.timeit
 def get_label_foreground(img, label):
     bbox = label.geometry.to_bbox()
     img_crop = sly.image.crop(img, bbox)
@@ -47,6 +49,7 @@ def get_label_foreground(img, label):
     return img_crop, mask
 
 
+@sly.timeit
 def augment_foreground(image, mask):
     augmented = aug.transform_fg(image=image, mask=mask)
     image_aug = augmented['image']
@@ -54,14 +57,16 @@ def augment_foreground(image, mask):
     return image_aug, mask_aug
 
 
-def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_infos, anns, labels, bg_images,
-               cache_dir):
+@sly.timeit
+def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos, labels, bg_images, cache_dir):
     augs = yaml.safe_load(state["augs"])
+    sly.logger.info("Init augs from yaml file")
     aug.init_fg_augs(augs)
 
     classes = state["selectedClasses"]
 
     bg_info = random.choice(bg_images)
+    sly.logger.info("Download background")
     bg = api.image.download_np(bg_info.id)
     sly.logger.debug(f"BG shape: {bg.shape}")
 
@@ -83,6 +88,8 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
     progress = sly.Progress("Processing foregrounds", len(to_generate))
+    refresh_progress(api, task_id, progress)
+
     # generate objects
     for class_name in to_generate:
         if class_name not in labels:
@@ -111,6 +118,8 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
 
         aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
         progress.iter_done_report()
+        if progress.need_report():
+            refresh_progress(api, task_id, progress)
 
     res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
 
@@ -119,4 +128,4 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
     #res_ann.draw(res_image)
     #sly.image.write(os.path.join(cache_dir, "__res_ann.png"), res_image)
 
-    return res_image, res_ann
+    return res_image, res_ann, res_meta
