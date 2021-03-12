@@ -198,6 +198,8 @@ def main():
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 #@TODO: need fix - one object completely covers another one (https://i.imgur.com/WC176Zz.png)
+#@TODO: rasterization https://i.imgur.com/q6RZQVv.png
+
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user
 #@TODO: validate augmentations - or get default value from original config if key not found
