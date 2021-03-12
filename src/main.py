@@ -82,7 +82,8 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
     if len(bg_images) == 0:
         sly.logger.warn("There are no background images")
     else:
-        img, ann = synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images)
+        synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images)
+        #img, ann =
 
     fields = [
         {"field": "state.previewLoading", "payload": False},
@@ -130,41 +131,7 @@ def main():
 #@TODO: rasterize labels before use this app
 #@TODO output project and task type
 # @TODO: semi-automatic augs builder # https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
-if __name__ == "__main__":
-    # vis_dir = "../images"
-    # image = sly.image.read("../images/label_img.png")
-    # mask = sly.image.read("../images/label_mask.png")
-    #
-    # import imgaug as ia
-    # import imgaug.augmenters as iaa
-    # from imgaug.augmentables.segmaps import SegmentationMapsOnImage
-    #
-    # seq = iaa.Sequential([
-    #     iaa.Rotate(rotate=(-90, 90), fit_output=True)
-    # ])
-    # segmap = SegmentationMapsOnImage(mask, shape=mask.shape)
-    #
-    # for i in range(50):
-    #     image_aug, segmap_aug = seq(image=image, segmentation_maps=segmap)
-    #     mask_aug = segmap_aug.get_arr()
-    #     sly.image.write(os.path.join(vis_dir, f"aug_{i}_label_img.png"), image_aug)
-    #     sly.image.write(os.path.join(vis_dir, f"aug_{i}_label_mask.png"), mask_aug)
-    #
-    # # import albumentations as A
-    # # import cv2
-    # # aaa = A.Compose([
-    # #     A.Rotate(limit=[-90, 90], interpolation=cv2.INTER_NEAREST, border_mode=cv2.BORDER_CONSTANT, value=0, mask_value=0)
-    # # ])
-    # #
-    # # augmented = aaa(image=image, mask=mask)
-    # # image_aug = augmented['image']
-    # # mask_aug = augmented['mask']
-    #
-    # sly.image.write(os.path.join(vis_dir, "aug_label_img.png"), image_aug)
-    # sly.image.write(os.path.join(vis_dir, "aug_label_mask.png"), mask_aug)
-
-    sly.main_wrapper("main", main)
-
-
-
 # https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
+if __name__ == "__main__":
+    sly.fs.clean_dir("../images") # @TODO: for debug
+    sly.main_wrapper("main", main)

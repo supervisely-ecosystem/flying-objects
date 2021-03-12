@@ -1,28 +1,21 @@
-# augmentations are mostly taken from ImgAug with default values
-# https://imgaug.readthedocs.io/en/latest/index.html
+# spacial augmentations are taken from ImgAug, color - from Albumentations
 # comment augmentation to disable it
 
-# Objects (foregrounds) augmentations
 objects:
   count: [0, 5] # number of objects (range) per image for every class
   augs:
     color:
-      GaussianNoise: (1, 2)
-      GaussianBlur: (1, 2)
-      GammaContrast: (0.5, 1.0)
-      #Contrast: (1, 3)
-      #Brightness: (1, 3)
+      RandomBrightnessContrast: true
+      CLAHE: true
+      Blur: true
     spacial:
       Fliplr: 0.5 # probability
       Flipud: 0.5 # probability
       Rotate: (-90, 90)
-      ElasticTransformation:
-        alpha: (0, 40)
-        sigma: (4, 8)
-      Resize: (0.8, 1.5) # Resize to something between 80 and 150% of its original size
-
-      # comment to disable
-      #RandomScale: [ 0.7, 1.5 ]
+      #ElasticTransformation:
+      #  alpha: (0, 40)
+      #  sigma: (4, 8)
+      Resize: (0.8, 5) # Resize to something between 80 and 150% of its original size
 
 # Background image augmentations (coming soon)
 # background: false

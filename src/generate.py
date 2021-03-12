@@ -15,8 +15,6 @@ vis_dir = "../images"
 sly.fs.mkdir(vis_dir)
 
 
-
-
 def update_bg_images(api, state):
     global bg_project_id, bg_datasets, bg_images
 
@@ -79,6 +77,7 @@ def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, label
             to_generate.append(class_name)
     random.shuffle(to_generate)
 
+    index = 0
     # generate objects
     for class_name in to_generate:
         if class_name not in labels:
@@ -89,12 +88,11 @@ def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, label
         source_image = api.image.download_np(image_id)
 
         label_img, label_mask = get_label_foreground(source_image, label)
-        sly.image.write(os.path.join(vis_dir, "label_img.png"), label_img)
-        sly.image.write(os.path.join(vis_dir, "label_mask.png"), label_mask)
+        sly.image.write(os.path.join(vis_dir, f"{index}_label_img.png"), label_img)
+        sly.image.write(os.path.join(vis_dir, f"{index}_label_mask.png"), label_mask)
 
         label_img, label_mask = aug.apply_to_foreground(label_img, label_mask)
-        sly.image.write(os.path.join(vis_dir, "aug_label_img.png"), label_img)
-        sly.image.write(os.path.join(vis_dir, "aug_label_mask.png"), label_mask)
+        sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_img.png"), label_img)
+        sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_mask.png"), label_mask)
 
-
-    pass
+        index += 1
