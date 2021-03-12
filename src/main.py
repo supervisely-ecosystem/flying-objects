@@ -199,6 +199,7 @@ def main():
 
 #@TODO: need fix - one object completely covers another one (https://i.imgur.com/WC176Zz.png)
 #@TODO: rasterization https://i.imgur.com/q6RZQVv.png
+#@TODO: handle overlap - option
 
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user
