@@ -56,3 +56,11 @@ def refresh_progress(api: sly.Api, task_id, progress: sly.Progress):
     ]
     api.task.set_fields(task_id, fields)
 
+
+def init_res_project(data, state):
+    data["resProjectId"] = None
+    state["resProjectName"] = None
+    data["resProjectPreviewUrl"] = None
+    data["started"] = False
+
+

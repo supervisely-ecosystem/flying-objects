@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 import supervisely_lib as sly
 
-from init_ui import init_input_project, init_classes_stats, init_augs, init_progress
+from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project
 from generate import update_bg_images, synthesize
 
 app: sly.AppService = sly.AppService()
@@ -114,6 +114,45 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
     api.task.set_fields(task_id, fields)
 
 
+@app.callback("generate")
+@sly.timeit
+def generate(api: sly.Api, task_id, context, state, app_logger):
+    bg_images = update_bg_images(api, state)
+
+    if len(bg_images) == 0:
+        sly.logger.warn("There are no background images")
+    else:
+        cache_dir = os.path.join(app.data_dir, "cache_images")
+        sly.fs.mkdir(cache_dir)
+        sly.fs.clean_dir(cache_dir)
+        img, ann, res_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
+
+        src_img_path = os.path.join(cache_dir, "res.png")
+        dst_img_path = os.path.join(f"/flying_object/{task_id}", "res.png")
+        sly.image.write(src_img_path, img)
+
+        file_info = None
+        if api.file.exists(team_id, dst_img_path):
+            api.file.remove(team_id, dst_img_path)
+            file_info = api.file.upload(team_id, src_img_path, dst_img_path)
+
+        gallery = dict(empty_gallery)
+        gallery["content"]["projectMeta"] = res_meta.to_json()
+        gallery["content"]["annotations"] = {
+            "preview": {
+                "url": file_info.full_storage_url,
+                "figures": [label.to_json() for label in ann.labels]
+            }
+        }
+        gallery["content"]["layout"] = [["preview"]]
+
+    fields = [
+        {"field": "data.gallery", "payload": gallery},
+        {"field": "state.previewLoading", "payload": False},
+    ]
+    api.task.set_fields(task_id, fields)
+
+
 def main():
     data = {}
     state = {}
@@ -139,15 +178,20 @@ def main():
     state["previewLoading"] = False
 
     init_progress(data)
+    init_res_project(data, state)
+    state["resProjectName"] = f"synthetic_{project_info.name}"
+    state["imagesCount"] = 100
 
     #@TODO: ONLY for debug
     state["bgProjectId"] = project_id
     state["bgDatasets"] = ["01_background"]
     state["allDatasets"] = False
     state["tabName"] = "Classes"
+    state["taskType"] = "seg"
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
+#@TODO: optimize speed
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user
 #@TODO: validate augmentations - or get default value from original config if key not found

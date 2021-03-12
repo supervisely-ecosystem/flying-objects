@@ -87,4 +87,46 @@
                 :options="data.gallery.options"/>
         <div v-show="Object.keys(data.gallery.content.annotations).length === 0">Gallery is empty</div>
     </sly-card>
+
+    <sly-card class="mt15"
+              title="Output"
+              subtitle="Define result project name and how many images have to be generated">
+        <div v-if="!data.resProjectId">
+            <sly-field title="Result project name"
+                       description="New project with synthetic images will be created.">
+                <el-input v-model="state.resProjectName" :disabled="data.started"></el-input>
+            </sly-field>
+            <sly-field title="Images count"
+                       description="How many images should be generated">
+                <el-input-number v-model="state.imagesCount" :min="1" :max="1000"></el-input-number>
+            </sly-field>
+            <sly-field title="Output task type"
+                       description="How final labels have to be processed (learn more in readme)">
+                <div style="display: flex; flex-direction: column">
+                    <el-radio class="radio mt5" v-model="state.taskType" label="seg">
+                        <b>Segmentation</b>
+                        <span style="color: gray"> - masks of all objects on image will be merged to a single one</span>
+                    </el-radio>
+                    <el-radio class="radio mt5" v-model="state.taskType" label="det">
+                        <b>Detection</b>
+                        <span style="color: gray"> - masks will be transformed to bounding boxes</span>
+                    </el-radio>
+                    <el-radio class="radio mt5" v-model="state.taskType" label="inst-seg">
+                        <b>Instance Segmentation</b>
+                        <span style="color: gray"> - separate mask for every object</span>
+                    </el-radio>
+                </div>
+            </sly-field>
+            <el-button type="primary" :loading="data.started" @click="data.started = true; command('generate')">Generate</el-button>
+            <div class="fflex" v-if="data.started === true">
+                <el-progress :percentage="data.progress" style="flex: 1"></el-progress>
+                <div class="ml10" style="flex: none;">[{{data.progressCurrent}} / {{data.progressTotal}}]</div>
+            </div>
+        </div>
+        <sly-field v-if="data.resProjectId" title="" description="Project">
+            <a slot="title" target="_blank"
+               :href="`/projects/${data.resProjectId}/datasets`">{{data.resProjectName}}</a>
+            <sly-icon slot="icon" :options="{ imageUrl: `${data.resProjectPreviewUrl}` }"/>
+        </sly-field>
+    </sly-card>
 </div>
