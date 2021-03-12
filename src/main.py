@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 import supervisely_lib as sly
 
-from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project
+from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project, refresh_progress
 from generate import update_bg_images, synthesize
 from postprocess import postprocess
 
@@ -133,9 +133,20 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         res_project = api.project.create(workspace_id, res_project_name, change_name_if_conflict=True)
         res_dataset = api.dataset.create(res_project.id, "ds0")
         res_meta = sly.ProjectMeta()
+
+        progress = sly.Progress("Generating images", state["imagesCount"])
+        refresh_progress_images(api, task_id, progress)
         for i in range(state["imagesCount"]):
             img, ann, cur_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
-            new_ann, res_meta = postprocess()
+            new_ann, merged_meta = postprocess(state, ann, cur_meta, res_meta)
+            if res_meta != merged_meta:
+                api.project.update_meta(res_project.id, merged_meta.to_json())
+                res_meta = merged_meta
+            image_info = api.image.upload_np(res_dataset.id, f"{i}.png", img)
+            api.annotation.upload_ann(image_info.id, ann)
+            progress.iter_done_report()
+            if progress.need_report():
+                refresh_progress_images(api, task_id, progress)
 
     fields = [
         {"field": "data.started", "payload": False},
@@ -170,14 +181,14 @@ def main():
     init_progress(data)
     init_res_project(data, state)
     state["resProjectName"] = f"synthetic_{project_info.name}"
-    state["imagesCount"] = 100
+    state["imagesCount"] = 10
 
     #@TODO: ONLY for debug
     state["bgProjectId"] = project_id
     state["bgDatasets"] = ["01_background"]
     state["allDatasets"] = False
     state["tabName"] = "Classes"
-    state["taskType"] = "seg"
+    state["taskType"] = "inst-seg"
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 

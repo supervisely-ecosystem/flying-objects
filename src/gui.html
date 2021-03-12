@@ -107,11 +107,11 @@
 
                 <el-radio-group v-model="state.taskType">
                     <div style="display: flex; flex-direction: column">
-                        <el-radio label="seg">
+                        <el-radio disabled label="seg">
                             <span>Segmentation</span>
-                            <span style="color: gray"> - masks of all objects on image will be merged to a single one</span>
+                            <span style="color: gray"> - masks of objects of same class on image will be merged to a single mask</span>
                         </el-radio>
-                        <el-radio class="mt5" label="det" style="margin-left: 0">
+                        <el-radio disabled class="mt5" label="det" style="margin-left: 0">
                             <span>Detection</span>
                             <span style="color: gray"> - masks will be transformed to bounding boxes</span>
                         </el-radio>
@@ -123,12 +123,24 @@
                 </el-radio-group>
 
             </sly-field>
-            <el-button type="primary" :loading="data.started" @click="data.started = true; command('generate')">
+            <el-button
+                    type="primary"
+                    :loading="data.started"
+                    @click="data.started = true; command('generate')"
+                    :disabled="state.selectedClasses.filter(Boolean).length === 0 ||
+                               !state.bgProjectId ||
+                               (state.allDatasets === false && state.bgDatasets.length === 0)">
                 Generate
             </el-button>
-            <div class="fflex" v-if="data.started === true">
-                <el-progress :percentage="data.progress" style="flex: 1"></el-progress>
+            <div class="fflex mt10" v-if="data.started === true">
+                <div class="mr10" style="width: 120px;">Objects on image:</div>
+                <el-progress :percentage="data.progressPercent" style="flex: 1"></el-progress>
                 <div class="ml10" style="flex: none;">[{{data.progressCurrent}} / {{data.progressTotal}}]</div>
+            </div>
+            <div class="fflex mt10" v-if="data.started === true">
+                <div class="mr10" style="width: 120px;">Generated images:</div>
+                <el-progress :percentage="data.progressPercentImages" style="flex: 1"></el-progress>
+                <div class="ml10" style="flex: none;">[{{data.progressCurrentImage}} / {{data.progressTotalImages}}]</div>
             </div>
         </div>
         <sly-field v-if="data.resProjectId" title="" description="Project">

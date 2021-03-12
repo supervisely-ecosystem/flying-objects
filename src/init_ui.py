@@ -47,12 +47,26 @@ def init_progress(data):
     data["progressCurrent"] = 0
     data["progressTotal"] = 0
 
+    data["progressPercentImages"] = 0
+    data["progressCurrentImage"] = 0
+    data["progressTotalImages"] = 0
+
+
 
 def refresh_progress(api: sly.Api, task_id, progress: sly.Progress):
     fields = [
         {"field": "data.progressPercent", "payload": int(progress.current * 100 / progress.total)},
         {"field": "data.progressCurrent", "payload": progress.current},
         {"field": "data.progressTotal", "payload": progress.total},
+    ]
+    api.task.set_fields(task_id, fields)
+
+
+def refresh_progress_images(api: sly.Api, task_id, progress: sly.Progress):
+    fields = [
+        {"field": "data.progressPercentImages", "payload": int(progress.current * 100 / progress.total)},
+        {"field": "data.progressCurrentImage", "payload": progress.current},
+        {"field": "data.progressTotalImages", "payload": progress.total},
     ]
     api.task.set_fields(task_id, fields)
 
