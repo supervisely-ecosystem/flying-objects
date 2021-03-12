@@ -4,6 +4,8 @@ import yaml
 import numpy as np
 import os
 
+import aug
+
 bg_project_id = None
 bg_datasets = None
 bg_images = None
@@ -11,6 +13,8 @@ bg_images = None
 #@TODO: only for debug
 vis_dir = "../images"
 sly.fs.mkdir(vis_dir)
+
+
 
 
 def update_bg_images(api, state):
@@ -49,8 +53,17 @@ def get_label_foreground(img, label):
     return img_crop, mask
 
 
+def augment_foreground(image, mask):
+    augmented = aug.transform_fg(image=image, mask=mask)
+    image_aug = augmented['image']
+    mask_aug = augmented['mask']
+    return image_aug, mask_aug
+
+
 def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, labels, bg_images):
     augs = yaml.safe_load(state["augs"])
+    aug.init_fg_augs(augs)
+
     classes = state["selectedClasses"]
 
     bg_info = random.choice(bg_images)
@@ -78,5 +91,10 @@ def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, label
         label_img, label_mask = get_label_foreground(source_image, label)
         sly.image.write(os.path.join(vis_dir, "label_img.png"), label_img)
         sly.image.write(os.path.join(vis_dir, "label_mask.png"), label_mask)
+
+        label_img, label_mask = aug.apply_to_foreground(label_img, label_mask)
+        sly.image.write(os.path.join(vis_dir, "aug_label_img.png"), label_img)
+        sly.image.write(os.path.join(vis_dir, "aug_label_mask.png"), label_mask)
+
 
     pass
