@@ -10,10 +10,6 @@ bg_project_id = None
 bg_datasets = None
 bg_images = None
 
-#@TODO: only for debug
-vis_dir = "../images"
-sly.fs.mkdir(vis_dir)
-
 
 def update_bg_images(api, state):
     global bg_project_id, bg_datasets, bg_images
@@ -102,12 +98,12 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
         source_image = sly.image.read(img_path)
 
         label_img, label_mask = get_label_foreground(source_image, label)
-        #sly.image.write(os.path.join(vis_dir, f"{index}_label_img.png"), label_img)
-        #sly.image.write(os.path.join(vis_dir, f"{index}_label_mask.png"), label_mask)
+        #sly.image.write(os.path.join(cache_dir, f"{index}_label_img.png"), label_img)
+        #sly.image.write(os.path.join(cache_dir, f"{index}_label_mask.png"), label_mask)
 
         label_img, label_mask = aug.apply_to_foreground(label_img, label_mask)
-        #sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_img.png"), label_img)
-        #sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_mask.png"), label_mask)
+        #sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_img.png"), label_img)
+        #sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_mask.png"), label_mask)
 
         origin = aug.find_origin(res_image.shape, label_mask.shape)
         g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
@@ -116,10 +112,11 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
         aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
         progress.iter_done_report()
 
-    sly.image.write(os.path.join(vis_dir, f"__res_img.png"), res_image)
-
     res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
-    res_ann.draw(res_image)
-    sly.image.write(os.path.join(vis_dir, f"__res_ann.png"), res_image)
+
+    # debug visualization
+    # sly.image.write(os.path.join(cache_dir, "__res_img.png"), res_image)
+    #res_ann.draw(res_image)
+    #sly.image.write(os.path.join(cache_dir, "__res_ann.png"), res_image)
 
     return res_image, res_ann

@@ -85,8 +85,15 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         cache_dir = os.path.join(app.data_dir, "cache_images")
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
-        synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images, cache_dir)
-        #img, ann =
+        img, ann = synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images, cache_dir)
+
+        src_img_path = os.path.join(cache_dir, "res.png")
+        dst_img_path = os.path.join(f"/flying_object/{task_id}", "res.png")
+        sly.image.write(src_img_path, img)
+
+        if api.file.exists(team_id, dst_img_path):
+            api.file.remove(team_id, dst_img_path)
+            api.file.upload(team_id, src_img_path, dst_img_path)
 
     fields = [
         {"field": "state.previewLoading", "payload": False},
@@ -136,5 +143,4 @@ def main():
 # @TODO: semi-automatic augs builder # https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
 # https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
 if __name__ == "__main__":
-    sly.fs.clean_dir("../images") # @TODO: for debug
     sly.main_wrapper("main", main)
