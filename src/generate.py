@@ -58,7 +58,7 @@ def augment_foreground(image, mask):
     return image_aug, mask_aug
 
 
-def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, labels, bg_images):
+def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_infos, anns, labels, bg_images):
     augs = yaml.safe_load(state["augs"])
     aug.init_fg_augs(augs)
 
@@ -68,14 +68,23 @@ def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, label
     bg = api.image.download_np(bg_info.id)
     sly.logger.debug(f"BG shape: {bg.shape}")
 
+    res_image = bg.copy()
+    res_labels = []
+
     # sequence of objects that will be generated
+    res_classes = []
     to_generate = []
     for class_name in classes:
+        original_class: sly.ObjClass = meta.get_obj_class(class_name)
+        res_classes.append(original_class.clone(geometry_type=sly.Bitmap))
+
         count_range = augs["objects"]["count"]
         count = random.randint(*count_range)
         for i in range(count):
             to_generate.append(class_name)
     random.shuffle(to_generate)
+    res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
+
 
     index = 0
     # generate objects
@@ -95,4 +104,14 @@ def synthesize(api: sly.Api, state, project_info, meta, image_infos, anns, label
         sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_img.png"), label_img)
         sly.image.write(os.path.join(vis_dir, f"{index}_aug_label_mask.png"), label_mask)
 
+        origin = aug.find_origin(res_image.shape, label_mask.shape)
+        g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
+        res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
+
         index += 1
+
+    res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
+    res_ann.draw(res_image)
+    sly.image.write(os.path.join(vis_dir, f"__res_ann.png"), res_image)
+
+    return res_image, res_ann

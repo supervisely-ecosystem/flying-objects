@@ -123,7 +123,7 @@ def main():
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
-#@TODO: fg->bg range w/h%???
+#@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user
 #@TODO: cache images and then clear cache on finish
 #@TODO: validate augmentations - or get default value from original config if key not found

@@ -15,7 +15,7 @@ objects:
       #ElasticTransformation:
       #  alpha: (0, 40)
       #  sigma: (4, 8)
-      Resize: (0.8, 5) # Resize to something between 80 and 150% of its original size
+      Resize: (0.8, 1.5) # Resize to something between 80 and 150% of its original size
 
 # Background image augmentations (coming soon)
 # background: false

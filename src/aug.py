@@ -1,4 +1,5 @@
 import imgaug as ia
+import random
 import imgaug.augmenters as iaa
 from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 from ast import literal_eval
@@ -90,3 +91,14 @@ def apply_to_foreground(image, mask):
     image_aug, segmap_aug = aug_spacial_fg(image=image_aug, segmentation_maps=segmap)
     mask_aug = segmap_aug.get_arr()
     return image_aug, mask_aug
+
+
+def find_origin(image_shape, mask_shape):
+    mh, mw = mask_shape[:2]
+    ih, iw = image_shape[:2]
+    if mh > ih or mw > iw:
+        raise NotImplementedError("Mask is bigger that background image")
+
+    x = random.randint(0, iw - mw - 1)
+    y = random.randint(0, ih - mh - 1)
+    return (x, y)
