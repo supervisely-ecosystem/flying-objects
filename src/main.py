@@ -82,7 +82,10 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
     if len(bg_images) == 0:
         sly.logger.warn("There are no background images")
     else:
-        synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images)
+        cache_dir = os.path.join(app.data_dir, "cache_images")
+        sly.fs.mkdir(cache_dir)
+        sly.fs.clean_dir(cache_dir)
+        synthesize(api, state, project_info, meta, images_info, anns, labels, bg_images, cache_dir)
         #img, ann =
 
     fields = [

@@ -58,7 +58,8 @@ def augment_foreground(image, mask):
     return image_aug, mask_aug
 
 
-def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_infos, anns, labels, bg_images):
+def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_infos, anns, labels, bg_images,
+               cache_dir):
     augs = yaml.safe_load(state["augs"])
     aug.init_fg_augs(augs)
 
@@ -85,16 +86,20 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
     random.shuffle(to_generate)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
-
-    index = 0
+    progress = sly.Progress("Processing foregrounds", len(to_generate))
     # generate objects
     for class_name in to_generate:
         if class_name not in labels:
+            progress.iter_done_report()
             continue
         image_id = random.choice(list(labels[class_name].keys()))
         label: sly.Label = random.choice(labels[class_name][image_id])
 
-        source_image = api.image.download_np(image_id)
+        image_info = image_infos[image_id]
+        img_path = os.path.join(cache_dir, f"{image_id}{sly.fs.get_file_ext(image_info.name)}")
+        if not sly.fs.file_exists(img_path):
+            api.image.download_path(image_id, img_path)
+        source_image = sly.image.read(img_path)
 
         label_img, label_mask = get_label_foreground(source_image, label)
         #sly.image.write(os.path.join(vis_dir, f"{index}_label_img.png"), label_img)
@@ -109,7 +114,7 @@ def synthesize(api: sly.Api, state, project_info, meta: sly.ProjectMeta, image_i
         res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
 
         aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
-        index += 1
+        progress.iter_done_report()
 
     sly.image.write(os.path.join(vis_dir, f"__res_img.png"), res_image)
 
