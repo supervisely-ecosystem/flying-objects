@@ -1,33 +1,27 @@
-# augmentations are mostly taken from Albumentations with default values
+# augmentations are mostly taken from ImgAug with default values
+# comment augmentation to disable it
 
 # Objects (foregrounds) augmentations
 objects:
   count: [0, 5] # number of objects (range) per image for every class
   augs:
     color:
-      RandomBrightnessContrast: true
-      RandomGamma: true
-      HueSaturationValue: true
-      Blur: false
+      GaussianNoise: (1, 2)
+      GaussianBlur: (1, 2)
+      GammaContrast: (0.5, 2.0)
+      Contrast: (1, 3)
+      Brightness: (1, 3)
     spacial:
-      # flip up-down
-      VerticalFlip: false
-
-      # flip left-right
-      HorizontalFlip: true
-
-      # flip the input either horizontally, vertically or both horizontally and vertically
-      Flip: false
-
-      # comment to disable
-      RandomScale: [ 0.7, 1.5 ]
+      Fliplr: 0.5 # probability
+      Flipud: 0.5 # probability
+      Rotate: (-90, 90)
+      ElasticTransformation:
+        alpha: (0, 80)
+        sigma: (0, 8)
+      Resize: (0.8, 1.5) # Resize to something between 80 and 150% of its original size
 
       # comment to disable
-      Rotate: [-90, 90]
-
-      # comment to disable
-      ElasticTransform: 300
-
+      #RandomScale: [ 0.7, 1.5 ]
 
 # Background image augmentations (coming soon)
 # background: false

@@ -1,7 +1,25 @@
-import albumentations as A
-import cv2
+import imgaug as ia
+import imgaug.augmenters as iaa
+from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 
 transform_fg = None
+
+
+name_func_color = {
+    "GaussianNoise": iaa.imgcorruptlike.GaussianNoise,
+    "GaussianBlur": iaa.imgcorruptlike.GaussianBlur,
+    "GammaContrast": iaa.GammaContrast,
+    "Contrast": iaa.imgcorruptlike.Contrast,
+    "Brightness": iaa.imgcorruptlike.Brightness
+}
+
+name_func_spacial = {
+    "Fliplr": iaa.Fliplr,
+    "Flipud": iaa.Flipud,
+    "Rotate": iaa.Rotate,
+    "ElasticTransformation": iaa.ElasticTransformation,
+    "Resize": iaa.Resize
+}
 
 
 def init_fg_augs(settings):
@@ -9,36 +27,18 @@ def init_fg_augs(settings):
     augs = []
 
     color_augs = settings['objects']['augs']['color']
-    if color_augs['RandomBrightnessContrast'] is True:
-        augs.append(A.RandomBrightnessContrast())
-    if color_augs['RandomGamma'] is True:
-        augs.append(A.RandomGamma())
-    if color_augs['HueSaturationValue'] is True:
-        augs.append(A.HueSaturationValue())
-    if color_augs['Blur'] is True:
-        augs.append(A.Blur())
+    for key, value in color_augs.items():
+        augs.append(name_func_color[key](value))
 
     spacial_augs = settings['objects']['augs']['spacial']
-    if spacial_augs['VerticalFlip'] is True:
-        augs.append(A.VerticalFlip())
-    if spacial_augs['HorizontalFlip'] is True:
-        augs.append(A.HorizontalFlip())
-    if 'Rotate' in spacial_augs:
-        augs.append(A.Rotate(limit=spacial_augs['Rotate'],
-                             interpolation=cv2.INTER_NEAREST,
-                             border_mode=cv2.BORDER_CONSTANT,
-                             value=0, mask_value=0)
-                    )
-    if 'ElasticTransform' in spacial_augs:
-        alpha = spacial_augs['ElasticTransform']
-        augs.append(A.ElasticTransform(alpha=alpha, sigma=alpha * 0.05, alpha_affine=alpha * 0.03))
+    for key, value in spacial_augs.items():
+        augs.append(name_func_spacial[key](value))
 
-    _alpha = 300
-    transform_fg = A.Compose(augs)
+    transform_fg = iaa.Sequential(augs, random_order=True)
 
 
 def apply_to_foreground(image, mask):
-    augmented = transform_fg(image=image, mask=mask)
-    image_aug = augmented['image']
-    mask_aug = augmented['mask']
+    segmap = SegmentationMapsOnImage(mask, shape=mask.shape)
+    image_aug, segmap_aug = transform_fg(image=image, segmentation_maps=segmap)
+    mask_aug = segmap_aug.get_arr()
     return image_aug, mask_aug
