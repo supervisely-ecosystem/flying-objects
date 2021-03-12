@@ -58,6 +58,15 @@ def augment_foreground(image, mask):
 
 
 @sly.timeit
+def _get_image_using_cache(api: sly.Api, cache_dir, image_id, image_info):
+    img_path = os.path.join(cache_dir, f"{image_id}{sly.fs.get_file_ext(image_info.name)}")
+    if not sly.fs.file_exists(img_path):
+        api.image.download_path(image_id, img_path)
+    source_image = sly.image.read(img_path)
+    return source_image
+
+
+@sly.timeit
 def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos, labels, bg_images, cache_dir):
     augs = yaml.safe_load(state["augs"])
     sly.logger.info("Init augs from yaml file")
@@ -90,19 +99,21 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     refresh_progress(api, task_id, progress)
 
+    cached_images = {}
     # generate objects
-    for class_name in to_generate:
+    for idx, class_name in enumerate(to_generate):
         if class_name not in labels:
             progress.iter_done_report()
             continue
         image_id = random.choice(list(labels[class_name].keys()))
         label: sly.Label = random.choice(labels[class_name][image_id])
 
-        image_info = image_infos[image_id]
-        img_path = os.path.join(cache_dir, f"{image_id}{sly.fs.get_file_ext(image_info.name)}")
-        if not sly.fs.file_exists(img_path):
-            api.image.download_path(image_id, img_path)
-        source_image = sly.image.read(img_path)
+        if image_id in cached_images:
+            source_image = cached_images[image_id]
+        else:
+            image_info = image_infos[image_id]
+            source_image = _get_image_using_cache(api, cache_dir, image_id, image_info)
+            cached_images[image_id] = source_image
 
         label_img, label_mask = get_label_foreground(source_image, label)
         #sly.image.write(os.path.join(cache_dir, f"{index}_label_img.png"), label_img)
@@ -118,8 +129,10 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
         aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
         progress.iter_done_report()
-        if progress.need_report():
-            refresh_progress(api, task_id, progress)
+        if idx % 10 == 0:  # progress.need_report():
+           refresh_progress(api, task_id, progress)
+
+    refresh_progress(api, task_id, progress)
 
     res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
 

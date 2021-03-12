@@ -192,7 +192,10 @@ def main():
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
-#@TODO: optimize speed
+#@TODO: speed - chache images
+# https://pypi.org/project/expiringdict/
+# or https://cachetools.readthedocs.io/en/stable/
+
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user
 #@TODO: validate augmentations - or get default value from original config if key not found
