@@ -4,6 +4,7 @@ import supervisely_lib as sly
 
 from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project
 from generate import update_bg_images, synthesize
+from postprocess import postprocess
 
 app: sly.AppService = sly.AppService()
 
@@ -134,7 +135,7 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         res_meta = sly.ProjectMeta()
         for i in range(state["imagesCount"]):
             img, ann, cur_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
-            
+            new_ann, res_meta = postprocess()
 
     fields = [
         {"field": "data.started", "payload": False},
