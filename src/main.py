@@ -125,30 +125,19 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         cache_dir = os.path.join(app.data_dir, "cache_images")
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
-        img, ann, res_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
 
-        src_img_path = os.path.join(cache_dir, "res.png")
-        dst_img_path = os.path.join(f"/flying_object/{task_id}", "res.png")
-        sly.image.write(src_img_path, img)
-
-        file_info = None
-        if api.file.exists(team_id, dst_img_path):
-            api.file.remove(team_id, dst_img_path)
-            file_info = api.file.upload(team_id, src_img_path, dst_img_path)
-
-        gallery = dict(empty_gallery)
-        gallery["content"]["projectMeta"] = res_meta.to_json()
-        gallery["content"]["annotations"] = {
-            "preview": {
-                "url": file_info.full_storage_url,
-                "figures": [label.to_json() for label in ann.labels]
-            }
-        }
-        gallery["content"]["layout"] = [["preview"]]
+        res_project_name = state["resProjectName"]
+        if res_project_name == "":
+            res_project_name = "synthetic"
+        res_project = api.project.create(workspace_id, res_project_name, change_name_if_conflict=True)
+        res_dataset = api.dataset.create(res_project.id, "ds0")
+        res_meta = sly.ProjectMeta()
+        for i in range(state["imagesCount"]):
+            img, ann, cur_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
+            
 
     fields = [
-        {"field": "data.gallery", "payload": gallery},
-        {"field": "state.previewLoading", "payload": False},
+        {"field": "data.started", "payload": False},
     ]
     api.task.set_fields(task_id, fields)
 

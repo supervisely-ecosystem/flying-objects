@@ -85,7 +85,7 @@
                 v-show="Object.keys(data.gallery.content.annotations).length > 0 && !state.previewLoading"
                 :content="data.gallery.content"
                 :options="data.gallery.options"/>
-        <div v-show="Object.keys(data.gallery.content.annotations).length === 0">Gallery is empty</div>
+        <div v-show="Object.keys(data.gallery.content.annotations).length === 0">Gallery is empty, press Preview button to visualize examples</div>
     </sly-card>
 
     <sly-card class="mt15"
