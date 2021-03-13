@@ -39,7 +39,7 @@ def init_augs(state: dict):
     state["augs"] = augs_str
 
     d = yaml.safe_load(augs_str)
-    print(json.dumps(d, indent=4))
+    #print(json.dumps(d, indent=4))
 
 
 def init_progress(data):
@@ -50,7 +50,6 @@ def init_progress(data):
     data["progressPercentImages"] = 0
     data["progressCurrentImage"] = 0
     data["progressTotalImages"] = 0
-
 
 
 def refresh_progress(api: sly.Api, task_id, progress: sly.Progress):

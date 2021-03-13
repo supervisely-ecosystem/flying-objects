@@ -1,4 +1,5 @@
 import supervisely_lib as sly
+import rasterize
 
 
 def postprocess(state, ann: sly.Annotation, cur_meta: sly.ProjectMeta, res_meta: sly.ProjectMeta):
@@ -12,3 +13,10 @@ def postprocess(state, ann: sly.Annotation, cur_meta: sly.ProjectMeta, res_meta:
         merged_meta = res_meta.merge(cur_meta)
         pass
     return ann, merged_meta
+
+
+def transform_for_detection(ann: sly.Annotation, cur_meta: sly.ProjectMeta):
+    # rasterize masks
+
+    # remove labels with empty mask (remove fully occluded objects)
+    pass

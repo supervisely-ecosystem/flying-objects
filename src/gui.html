@@ -64,7 +64,7 @@
 
     <sly-card class="mt15"
               title="Random preview"
-              subtitle="Preview synthetic image and labels">
+              subtitle="Preview synthetic image and labels, overlapping is handled automatically, fully covered objects will be skipped">
         <div slot="header">
             <el-button
                     type="primary"
@@ -85,8 +85,8 @@
                 v-show="Object.keys(data.gallery.content.annotations).length > 0 && !state.previewLoading"
                 :content="data.gallery.content"
                 :options="data.gallery.options"/>
-        <div v-show="Object.keys(data.gallery.content.annotations).length === 0">Gallery is empty, press Preview button
-            to visualize examples
+        <div v-show="Object.keys(data.gallery.content.annotations).length === 0 && !state.previewLoading">
+            Gallery is empty, press Preview button to visualize examples
         </div>
     </sly-card>
 

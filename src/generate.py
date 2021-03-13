@@ -5,6 +5,7 @@ import numpy as np
 import os
 
 import aug
+import rasterize
 from init_ui import refresh_progress
 
 bg_project_id = None
@@ -99,6 +100,8 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     refresh_progress(api, task_id, progress)
 
+    progress_every = max(10, int(len(to_generate) / 20))
+
     cached_images = {}
     # generate objects
     for idx, class_name in enumerate(to_generate):
@@ -129,7 +132,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
         aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
         progress.iter_done_report()
-        if idx % 10 == 0:  # progress.need_report():
+        if idx % progress_every == 0:  # progress.need_report():
            refresh_progress(api, task_id, progress)
 
     refresh_progress(api, task_id, progress)
@@ -140,5 +143,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     # sly.image.write(os.path.join(cache_dir, "__res_img.png"), res_image)
     #res_ann.draw(res_image)
     #sly.image.write(os.path.join(cache_dir, "__res_ann.png"), res_image)
+
+    res_meta, res_ann = rasterize.convert_to_nonoverlapping(res_meta, res_ann)
 
     return res_image, res_ann, res_meta

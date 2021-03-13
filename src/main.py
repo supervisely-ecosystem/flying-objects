@@ -197,19 +197,17 @@ def main():
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
+#@TODO: stop app manually: output dataset - to generate subsets with different settings for different classes
+# add it to the readme
 #@TODO: need fix - one object completely covers another one (https://i.imgur.com/WC176Zz.png)
 #@TODO: rasterization https://i.imgur.com/q6RZQVv.png
 #@TODO: handle overlap - option
-
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
-#@TODO: handle invalid augementations from user
-#@TODO: validate augmentations - or get default value from original config if key not found
+#@TODO: handle invalid augementations from user (validate augmentations)
 #@TODO: check sum of objects for selected classes - disable buttons
 #@TODO: rasterize labels before use this app
 #@TODO: output project and task type
 # @TODO: semi-automatic augs builder # https://stackoverflow.com/questions/334655/passing-a-dictionary-to-a-function-as-keyword-parameters
-# https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
-#@TODO: speed - chache images
 # https://pypi.org/project/expiringdict/
 # or https://cachetools.readthedocs.io/en/stable/
 if __name__ == "__main__":
