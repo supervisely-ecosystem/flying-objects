@@ -98,7 +98,7 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         file_info = None
         if api.file.exists(team_id, dst_img_path):
             api.file.remove(team_id, dst_img_path)
-            file_info = api.file.upload(team_id, src_img_path, dst_img_path)
+        file_info = api.file.upload(team_id, src_img_path, dst_img_path)
 
         gallery = dict(empty_gallery)
         gallery["content"]["projectMeta"] = res_meta.to_json()
