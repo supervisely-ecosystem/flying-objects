@@ -39,10 +39,7 @@ def convert_to_nonoverlapping(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sl
             mask = common_img == idx
             if np.any(mask):  # figure may be entirely covered by others
                 g = lbl.geometry
-                new_bmp = sly.Bitmap(data=mask,
-                                     labeler_login=g.labeler_login,
-                                     updated_at=g.updated_at,
-                                     created_at=g.created_at)
+                new_bmp = sly.Bitmap(data=mask)
                 if new_classes.get(lbl.obj_class.name) is None:
                     new_classes = new_classes.add(lbl.obj_class.clone(geometry_type=sly.Bitmap))
 
