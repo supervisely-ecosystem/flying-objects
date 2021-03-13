@@ -209,7 +209,7 @@ def main():
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
-
+#@TODO: remove debug values
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user (validate augmentations)
 #@TODO: check sum of objects for selected classes - disable buttons
