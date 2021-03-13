@@ -146,7 +146,7 @@
                         <span>Add to existing project</span>
 <!--                        <span style="color: gray"> - additional classes will be added automatically</span>-->
                     </el-radio>
-                    <div v-show="state.destProject === 'existingProject'" class="mt5" style="margin-left: 25px">
+                    <div v-if="state.destProject === 'existingProject'" class="mt5" style="margin-left: 25px">
                         <div class="fflex">
                             <span style="width: 120px">Project name:</span>
                             <sly-select-project :workspace-id="state.workspaceId"
