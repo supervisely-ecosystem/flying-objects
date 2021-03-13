@@ -62,27 +62,27 @@
             <el-tab-pane label="4. Postprocessing" name="Postprocessing">
                 <sly-field title="Output task type"
                            description="How final labels have to be processed (learn more in readme)">
-<!--                    <el-radio-group v-model="state.taskType">-->
-                        <div style="display: flex; flex-direction: column">
-                            <el-radio v-model="state.taskType" label="seg">
-                                <span>Segmentation</span>
-                                <span style="color: gray"> - all objects of same class on image will be merged to a single mask</span>
-                            </el-radio>
-                            <el-radio v-model="state.taskType" class="mt5" label="det" style="margin-left: 0">
-                                <span>Detection</span>
-                                <span style="color: gray"> - masks will be transformed to bounding boxes</span>
-                            </el-radio>
-                            <el-radio v-model="state.taskType" class="mt5" label="inst-seg" style="margin-left: 0">
-                                <span>Instance Segmentation</span>
-                                <span style="color: gray"> - separate mask for every object</span>
-                            </el-radio>
-                            <div class="mt5" style="margin-left: 25px">
-                                <el-checkbox v-model="state.highlightInstances" :disabled="state.taskType !== 'inst-seg'">
-                                    Use random colors to highlight object instances in Preview
-                                </el-checkbox>
-                            </div>
+                    <!--                    <el-radio-group v-model="state.taskType">-->
+                    <div style="display: flex; flex-direction: column">
+                        <el-radio v-model="state.taskType" label="seg">
+                            <span>Segmentation</span>
+                            <span style="color: gray"> - all objects of same class on image will be merged to a single mask</span>
+                        </el-radio>
+                        <el-radio v-model="state.taskType" class="mt5" label="det" style="margin-left: 0">
+                            <span>Detection</span>
+                            <span style="color: gray"> - masks will be transformed to bounding boxes</span>
+                        </el-radio>
+                        <el-radio v-model="state.taskType" class="mt5" label="inst-seg" style="margin-left: 0">
+                            <span>Instance Segmentation</span>
+                            <span style="color: gray"> - separate mask for every object</span>
+                        </el-radio>
+                        <div class="mt5" style="margin-left: 25px">
+                            <el-checkbox v-model="state.highlightInstances" :disabled="state.taskType !== 'inst-seg'">
+                                Use random colors to highlight object instances in Preview
+                            </el-checkbox>
                         </div>
-<!--                    </el-radio-group>-->
+                    </div>
+                    <!--                    </el-radio-group>-->
                 </sly-field>
             </el-tab-pane>
 
@@ -120,10 +120,43 @@
     <sly-card class="mt15"
               title="Output"
               subtitle="Define result project name and how many images have to be generated">
-        <div v-if="!data.resProjectId">
-            <sly-field title="Result project name"
-                       description="New project with synthetic images will be created.">
-                <el-input v-model="state.resProjectName"></el-input>
+        <!--        v-if="!data.resProjectId"-->
+        <div>
+
+            <sly-field title="Output project and dataset"
+                       description="Set where to save synthetic images">
+                <div style="display: flex; flex-direction: column">
+                    <el-radio v-model="state.destProject" label="newProject">
+                        <span>Create new project</span>
+                    </el-radio>
+                    <div v-show="state.destProject === 'newProject'" class="mt5" style="margin-left: 25px">
+                        <div class="fflex">
+                            <span style="width: 150px">Project name:</span>
+                            <el-input v-model="state.resProjectName"></el-input>
+                        </div>
+                        <div class="fflex mt5">
+                            <span style="width: 150px">Dataset name:</span>
+                            <el-input v-model="state.resDatasetName"></el-input>
+                        </div>
+                    </div>
+                    <el-radio v-model="state.destProject" class="mt5" label="existingProject" style="margin-left: 0">
+                        <span>Add to existing project</span>
+                        <span style="color: gray"> - additional classes will be added automatically</span>
+                    </el-radio>
+                    <div v-show="state.destProject === 'existingProject'" class="mt5" style="margin-left: 25px">
+                        <div class="fflex mt5">
+                            <span style="width: 150px">Project name:</span>
+                            <sly-select-project :workspace-id="state.workspaceId"
+                                                :project-id.sync="state.destProjectId"
+                                                :options="{'showLabel': false}">
+                            </sly-select-project>
+                        </div>
+                        <div class="fflex mt5">
+                            <span style="min-width: 150px">Dataset name:</span>
+                            <el-input v-model="state.resDatasetName"></el-input>
+                        </div>
+                    </div>
+                </div>
             </sly-field>
             <sly-field title="Images count"
                        description="How many images should be generated">

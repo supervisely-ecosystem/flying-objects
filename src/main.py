@@ -180,7 +180,7 @@ def main():
 
     #augmentations tab
     init_augs(state)
-    state["highlightInstances"] = True
+    state["highlightInstances"] = False
 
     # gallery
     data["gallery"] = empty_gallery
@@ -188,8 +188,12 @@ def main():
 
     init_progress(data)
     init_res_project(data, state)
+    state["destProject"] = "newProject"
+    state["resDatasetName"] = "ds0"
+    state["destProjectId"] = None
     state["resProjectName"] = f"synthetic_{project_info.name}"
     state["imagesCount"] = 10
+
 
     #@TODO: ONLY for debug
     state["bgProjectId"] = project_id
@@ -202,7 +206,6 @@ def main():
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 #@TODO: question: el-radio-group not working with custom div
-#@TODO: checkbox - highlight instancess for instance segmentation
 #@TODO: stop app manually: output dataset - to generate subsets with different settings for different classes
 # add it to the readme
 #@TODO: need fix - one object completely covers another one (https://i.imgur.com/WC176Zz.png)
