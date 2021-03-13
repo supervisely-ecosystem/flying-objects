@@ -39,7 +39,7 @@ def update_bg_images(api, state):
     return bg_images
 
 
-@sly.timeit
+#@sly.timeit
 def get_label_foreground(img, label):
     bbox = label.geometry.to_bbox()
     img_crop = sly.image.crop(img, bbox)
@@ -50,7 +50,7 @@ def get_label_foreground(img, label):
     return img_crop, mask
 
 
-@sly.timeit
+#@sly.timeit
 def augment_foreground(image, mask):
     augmented = aug.transform_fg(image=image, mask=mask)
     image_aug = augmented['image']
@@ -58,7 +58,7 @@ def augment_foreground(image, mask):
     return image_aug, mask_aug
 
 
-@sly.timeit
+#@sly.timeit
 def _get_image_using_cache(api: sly.Api, cache_dir, image_id, image_info):
     img_path = os.path.join(cache_dir, f"{image_id}{sly.fs.get_file_ext(image_info.name)}")
     if not sly.fs.file_exists(img_path):

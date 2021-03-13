@@ -129,23 +129,27 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
 
-        res_project_name = state["resProjectName"]
-        if res_project_name == "":
-            res_project_name = "synthetic"
-        res_project = api.project.create(workspace_id, res_project_name, change_name_if_conflict=True)
-        res_dataset = api.dataset.create(res_project.id, "ds0")
-        res_meta = sly.ProjectMeta()
+        if state["destProject"] == "newProject":
+            res_project_name = state["resProjectName"]
+            if res_project_name == "":
+                res_project_name = "synthetic"
+            res_project = api.project.create(workspace_id, res_project_name, change_name_if_conflict=True)
+        elif state["destProject"] == "existingProject":
+            res_project = api.project.get_info_by_id(state["destProjectId"])
+
+        res_dataset = api.dataset.get_or_create(res_project.id, state["resDatasetName"])
+        res_meta = sly.ProjectMeta.from_json(api.project.get_meta(res_project.id))
 
         progress = sly.Progress("Generating images", state["imagesCount"])
         refresh_progress_images(api, task_id, progress)
         for i in range(state["imagesCount"]):
             img, ann, cur_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
-            new_ann, merged_meta = postprocess(state, ann, cur_meta, res_meta)
+            merged_meta, new_ann = postprocess(state, ann, cur_meta, res_meta)
             if res_meta != merged_meta:
                 api.project.update_meta(res_project.id, merged_meta.to_json())
                 res_meta = merged_meta
             image_info = api.image.upload_np(res_dataset.id, f"{i}.png", img)
-            api.annotation.upload_ann(image_info.id, ann)
+            api.annotation.upload_ann(image_info.id, new_ann)
             progress.iter_done_report()
             if progress.need_report():
                 refresh_progress_images(api, task_id, progress)
@@ -158,7 +162,7 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         {"field": "data.resProjectPreviewUrl", "payload": api.image.preview_url(res_project.reference_image_url, 100, 100)},
     ]
     api.task.set_fields(task_id, fields)
-    app.stop()
+    #app.stop()
 
 
 def main():

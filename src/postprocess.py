@@ -1,5 +1,6 @@
 import numpy as np
 import supervisely_lib as sly
+from supervisely_lib._utils import generate_free_name
 
 
 def postprocess(state, ann: sly.Annotation, cur_meta: sly.ProjectMeta, res_meta: sly.ProjectMeta) \
@@ -11,8 +12,9 @@ def postprocess(state, ann: sly.Annotation, cur_meta: sly.ProjectMeta, res_meta:
         new_meta, new_ann = transform_for_detection(cur_meta, ann)
     elif task_type == "inst-seg":
         new_meta, new_ann = cur_meta, ann
-    merged_meta = res_meta.merge(new_meta)
-    return merged_meta, new_ann
+
+    new_meta, res_meta, new_ann = merge_classes(new_meta, res_meta, new_ann)
+    return res_meta, new_ann
 
 
 def transform_for_detection(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.ProjectMeta, sly.Annotation):
@@ -75,3 +77,31 @@ def highlight_instances(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.Proj
     res_meta = meta.clone(obj_classes=sly.ObjClassCollection(new_classes))
     res_ann = ann.clone(labels=new_labels)
     return (res_meta, res_ann)
+
+
+def merge_classes(cur_meta: sly.ProjectMeta, res_meta: sly.ProjectMeta, ann: sly.Annotation):
+    existing_names = set([obj_class.name for obj_class in res_meta.obj_classes])
+    mapping = {}
+    for obj_class in cur_meta.obj_classes:
+        obj_class: sly.ObjClass
+        if obj_class.name in mapping:
+            continue
+        dest_class = res_meta.get_obj_class(obj_class.name)
+        if dest_class is None:
+            res_meta = res_meta.add_obj_class(obj_class)
+            dest_class = obj_class
+        elif obj_class != dest_class:
+            new_name = generate_free_name(existing_names, obj_class.name)
+            dest_class = obj_class.clone(name=new_name)
+            res_meta = res_meta.add_obj_class(dest_class)
+        mapping[obj_class.name] = dest_class
+
+    new_labels = []
+    for label in ann.labels:
+        if label.obj_class.name not in mapping:
+            new_labels.append(label)
+        else:
+            new_labels.append(label.clone(obj_class=mapping[label.obj_class.name]))
+
+    new_ann = ann.clone(labels=new_labels)
+    return (res_meta, res_meta, new_ann)
