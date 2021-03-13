@@ -207,6 +207,7 @@ def main():
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
+#@TODO: progress message in task list
 #@TODO: ElasticTransformation
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user (validate augmentations)
