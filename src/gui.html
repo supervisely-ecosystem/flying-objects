@@ -12,7 +12,7 @@
               title="Settings"
               subtitle="Configure parameters of synthetic data generation">
         <el-tabs v-model="state.tabName">
-            <el-tab-pane label="Backgrounds" name="Backgrounds">
+            <el-tab-pane label="1. Backgrounds" name="Backgrounds">
                 <sly-select-team-workspace
                         :team-id.sync="state.teamId"
                         :workspace-id.sync="state.workspaceId">
@@ -30,7 +30,7 @@
                 </sly-select-dataset>
 
             </el-tab-pane>
-            <el-tab-pane label="Classes" name="Classes">
+            <el-tab-pane label="2. Classes" name="Classes">
                 <div v-if="data.classes.length === 0">Project does not have any classes</div>
                 <div v-if="data.classes.length > 0">
                     <el-table
@@ -56,9 +56,36 @@
                     </el-table>
                 </div>
             </el-tab-pane>
-            <el-tab-pane label="Augmentations" name="Augmentations">
+            <el-tab-pane label="3. Augmentations" name="Augmentations">
                 <sly-editor v-model="state.augs" :options="{height: '600px', mode: 'ace/mode/yaml'}"></sly-editor>
             </el-tab-pane>
+            <el-tab-pane label="4. Postprocessing" name="Postprocessing">
+                <sly-field title="Output task type"
+                           description="How final labels have to be processed (learn more in readme)">
+<!--                    <el-radio-group v-model="state.taskType">-->
+                        <div style="display: flex; flex-direction: column">
+                            <el-radio v-model="state.taskType" label="seg">
+                                <span>Segmentation</span>
+                                <span style="color: gray"> - all objects of same class on image will be merged to a single mask</span>
+                            </el-radio>
+                            <el-radio v-model="state.taskType" class="mt5" label="det" style="margin-left: 0">
+                                <span>Detection</span>
+                                <span style="color: gray"> - masks will be transformed to bounding boxes</span>
+                            </el-radio>
+                            <el-radio v-model="state.taskType" class="mt5" label="inst-seg" style="margin-left: 0">
+                                <span>Instance Segmentation</span>
+                                <span style="color: gray"> - separate mask for every object</span>
+                            </el-radio>
+                            <div class="mt5" style="margin-left: 25px">
+                                <el-checkbox v-model="state.highlightInstances" :disabled="state.taskType !== 'inst-seg'">
+                                    Use random colors to highlight object instances in Preview
+                                </el-checkbox>
+                            </div>
+                        </div>
+<!--                    </el-radio-group>-->
+                </sly-field>
+            </el-tab-pane>
+
         </el-tabs>
     </sly-card>
 
@@ -102,27 +129,6 @@
                        description="How many images should be generated">
                 <el-input-number v-model="state.imagesCount" :min="1" :max="1000"></el-input-number>
             </sly-field>
-            <sly-field title="Output task type"
-                       description="How final labels have to be processed (learn more in readme)">
-
-                <el-radio-group v-model="state.taskType">
-                    <div style="display: flex; flex-direction: column">
-                        <el-radio disabled label="seg">
-                            <span>Segmentation</span>
-                            <span style="color: gray"> - masks of objects of same class on image will be merged to a single mask</span>
-                        </el-radio>
-                        <el-radio disabled class="mt5" label="det" style="margin-left: 0">
-                            <span>Detection</span>
-                            <span style="color: gray"> - masks will be transformed to bounding boxes</span>
-                        </el-radio>
-                        <el-radio class="mt5" label="inst-seg" style="margin-left: 0">
-                            <span>Instance Segmentation</span>
-                            <span style="color: gray"> - separate mask for every object</span>
-                        </el-radio>
-                    </div>
-                </el-radio-group>
-
-            </sly-field>
             <el-button
                     type="primary"
                     :loading="data.started"
@@ -140,7 +146,8 @@
             <div class="fflex mt10" v-if="data.started === true">
                 <div class="mr10" style="width: 120px;">Generated images:</div>
                 <el-progress :percentage="data.progressPercentImages" style="flex: 1"></el-progress>
-                <div class="ml10" style="flex: none;">[{{data.progressCurrentImage}} / {{data.progressTotalImages}}]</div>
+                <div class="ml10" style="flex: none;">[{{data.progressCurrentImage}} / {{data.progressTotalImages}}]
+                </div>
             </div>
         </div>
         <sly-field v-if="data.resProjectId" title="" description="Project">

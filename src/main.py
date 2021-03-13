@@ -4,7 +4,7 @@ import supervisely_lib as sly
 
 from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project, refresh_progress_images
 from generate import update_bg_images, synthesize
-from postprocess import postprocess
+from postprocess import postprocess, highlight_instances
 
 app: sly.AppService = sly.AppService()
 
@@ -88,7 +88,9 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
         img, ann, res_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
-
+        res_meta, ann = postprocess(state, ann, res_meta, sly.ProjectMeta())
+        if state["taskType"] == "inst-seg" and state["highlightInstances"] is True:
+            res_meta, ann = highlight_instances(res_meta, ann)
         src_img_path = os.path.join(cache_dir, "res.png")
         dst_img_path = os.path.join(f"/flying_object/{task_id}", "res.png")
         sly.image.write(src_img_path, img)
@@ -178,6 +180,7 @@ def main():
 
     #augmentations tab
     init_augs(state)
+    state["highlightInstances"] = True
 
     # gallery
     data["gallery"] = empty_gallery
@@ -195,8 +198,11 @@ def main():
     state["tabName"] = "Classes"
     state["taskType"] = "inst-seg"
 
+
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
+#@TODO: question: el-radio-group not working with custom div
+#@TODO: checkbox - highlight instancess for instance segmentation
 #@TODO: stop app manually: output dataset - to generate subsets with different settings for different classes
 # add it to the readme
 #@TODO: need fix - one object completely covers another one (https://i.imgur.com/WC176Zz.png)
