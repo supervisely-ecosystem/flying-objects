@@ -144,7 +144,7 @@
                     </div>
                     <el-radio v-model="state.destProject" class="mt5" label="existingProject" style="margin-left: 0">
                         <span>Add to existing project</span>
-<!--                        <span style="color: gray"> - additional classes will be added automatically</span>-->
+                        <!--                        <span style="color: gray"> - additional classes will be added automatically</span>-->
                     </el-radio>
                     <div v-if="state.destProject === 'existingProject'" class="mt5" style="margin-left: 25px">
                         <div class="fflex">
@@ -185,10 +185,14 @@
                 </div>
             </div>
         </div>
-        <sly-field v-if="data.resProjectId && !data.started" title="" description="Project">
-            <a slot="title" target="_blank"
-               :href="`/projects/${data.resProjectId}/datasets`">{{data.resProjectName}}</a>
-            <sly-icon slot="icon" :options="{ imageUrl: `${data.resProjectPreviewUrl}` }"/>
-        </sly-field>
+        <div style="margin-top: 30px;">
+            <sly-field class="mt15" v-if="data.resProjectId && !data.started" title="Destination project">
+                <sly-field title="" description="Project">
+                    <a slot="title" target="_blank"
+                       :href="`/projects/${data.resProjectId}/datasets`">{{data.resProjectName}}</a>
+                    <sly-icon slot="icon" :options="{ imageUrl: `${data.resProjectPreviewUrl}` }"/>
+                </sly-field>
+            </sly-field>
+        </div>
     </sly-card>
 </div>
