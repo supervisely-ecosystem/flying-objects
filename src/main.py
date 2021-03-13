@@ -184,6 +184,7 @@ def main():
 
     #augmentations tab
     init_augs(state)
+    state["taskType"] = "inst-seg"
     state["highlightInstances"] = False
 
     # gallery
@@ -198,19 +199,15 @@ def main():
     state["resProjectName"] = f"synthetic_{project_info.name}"
     state["imagesCount"] = 10
 
-
     #@TODO: ONLY for debug
-    state["bgProjectId"] = project_id
-    state["bgDatasets"] = ["01_background"]
-    state["allDatasets"] = False
-    state["tabName"] = "Classes"
-    state["taskType"] = "inst-seg"
-
+    # state["bgProjectId"] = project_id
+    # state["bgDatasets"] = ["01_background"]
+    # state["allDatasets"] = False
+    # state["tabName"] = "Classes"
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 #@TODO: ElasticTransformation
-#@TODO: remove debug values
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user (validate augmentations)
 #@TODO: check sum of objects for selected classes - disable buttons
