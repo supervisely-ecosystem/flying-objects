@@ -104,6 +104,12 @@ def find_origin(image_shape, mask_shape):
     return (x, y)
 
 
+# def resize_foreground(image, mask):
+#     img_h, img_w, _ = image.shape
+#     mask_h, mask_w, _ = mask.shape
+
+
+
 def place_fg_to_bg(fg, fg_mask, bg, x, y):
     sec_h, sec_w, _ = fg.shape
     secondary_object = cv2.bitwise_and(fg, fg_mask)

@@ -61,7 +61,7 @@ def cache_annotations(api: sly.Api, task_id, context, state, app_logger):
                 images_info[image_id] = image_info
                 for label in ann.labels:
                     labels[label.obj_class.name][image_id].append(label)
-        progress.iters_done_report(len(batch))
+            progress.iters_done_report(len(batch))
 
 
 @app.callback("select_all_classes")
@@ -209,7 +209,7 @@ def main():
 
 #@TODO: progress message in task list
 #@TODO: ElasticTransformation
-#@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
+#@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg) aug.resize_foreground
 #@TODO: handle invalid augementations from user (validate augmentations)
 #@TODO: check sum of objects for selected classes - disable buttons
 #@TODO: output resolution
