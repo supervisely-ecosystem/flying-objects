@@ -122,7 +122,10 @@
               subtitle="Define result project name and how many images have to be generated">
         <!--        v-if="!data.resProjectId"-->
         <div>
-
+            <sly-field title="Images count"
+                       description="How many images should be generated">
+                <el-input-number v-model="state.imagesCount" :min="1" :max="1000"></el-input-number>
+            </sly-field>
             <sly-field title="Output project and dataset"
                        description="Set where to save synthetic images">
                 <div style="display: flex; flex-direction: column">
@@ -131,36 +134,32 @@
                     </el-radio>
                     <div v-show="state.destProject === 'newProject'" class="mt5" style="margin-left: 25px">
                         <div class="fflex">
-                            <span style="width: 150px">Project name:</span>
+                            <span style="width: 120px">Project name:</span>
                             <el-input v-model="state.resProjectName"></el-input>
                         </div>
                         <div class="fflex mt5">
-                            <span style="width: 150px">Dataset name:</span>
+                            <span style="width: 120px">Dataset name:</span>
                             <el-input v-model="state.resDatasetName"></el-input>
                         </div>
                     </div>
                     <el-radio v-model="state.destProject" class="mt5" label="existingProject" style="margin-left: 0">
                         <span>Add to existing project</span>
-                        <span style="color: gray"> - additional classes will be added automatically</span>
+<!--                        <span style="color: gray"> - additional classes will be added automatically</span>-->
                     </el-radio>
                     <div v-show="state.destProject === 'existingProject'" class="mt5" style="margin-left: 25px">
-                        <div class="fflex mt5">
-                            <span style="width: 150px">Project name:</span>
+                        <div class="fflex">
+                            <span style="width: 120px">Project name:</span>
                             <sly-select-project :workspace-id="state.workspaceId"
                                                 :project-id.sync="state.destProjectId"
                                                 :options="{'showLabel': false}">
                             </sly-select-project>
                         </div>
                         <div class="fflex mt5">
-                            <span style="min-width: 150px">Dataset name:</span>
+                            <span style="min-width: 120px">Dataset name:</span>
                             <el-input v-model="state.resDatasetName"></el-input>
                         </div>
                     </div>
                 </div>
-            </sly-field>
-            <sly-field title="Images count"
-                       description="How many images should be generated">
-                <el-input-number v-model="state.imagesCount" :min="1" :max="1000"></el-input-number>
             </sly-field>
             <el-button
                     type="primary"
@@ -168,7 +167,10 @@
                     @click="data.started = true; command('generate')"
                     :disabled="state.selectedClasses.filter(Boolean).length === 0 ||
                                !state.bgProjectId ||
-                               (state.allDatasets === false && state.bgDatasets.length === 0)">
+                               (state.allDatasets === false && state.bgDatasets.length === 0) ||
+                               (state.destProject === 'existingProject' && !state.destProjectId) ||
+                               (state.destProject === 'newProject' && state.resProjectName.length === 0) ||
+                               (state.resDatasetName.length === 0)">
                 Generate
             </el-button>
             <div class="fflex mt10" v-if="data.started === true">
