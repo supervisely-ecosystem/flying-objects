@@ -148,7 +148,7 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
             if res_meta != merged_meta:
                 api.project.update_meta(res_project.id, merged_meta.to_json())
                 res_meta = merged_meta
-            image_info = api.image.upload_np(res_dataset.id, f"{i}.png", img)
+            image_info = api.image.upload_np(res_dataset.id, f"{i + res_dataset.items_count}.png", img)
             api.annotation.upload_ann(image_info.id, new_ann)
             progress.iter_done_report()
             if progress.need_report():

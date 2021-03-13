@@ -185,7 +185,7 @@
                 </div>
             </div>
         </div>
-        <sly-field v-if="data.resProjectId" title="" description="Project">
+        <sly-field v-if="data.resProjectId && !data.started" title="" description="Project">
             <a slot="title" target="_blank"
                :href="`/projects/${data.resProjectId}/datasets`">{{data.resProjectName}}</a>
             <sly-icon slot="icon" :options="{ imageUrl: `${data.resProjectPreviewUrl}` }"/>

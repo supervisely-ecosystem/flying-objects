@@ -21,15 +21,14 @@ def transform_for_detection(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.
     new_classes = sly.ObjClassCollection()
     new_labels = []
     for label in ann.labels:
+        new_class = label.obj_class.clone(name=label.obj_class.name + "-bbox")
         if label.obj_class.geometry_type is sly.Rectangle:
-            new_labels.append(label)
-            if new_classes.get(label.obj_class.name) is None:
-                new_classes = new_classes.add(label.obj_class)
+            new_labels.append(label.clone(obj_class=new_class))
+            if new_classes.get(new_class.name) is None:
+                new_classes = new_classes.add(new_class)
         else:
             bbox = label.geometry.to_bbox()
-            new_class = new_classes.get(label.obj_class.name)
-            if new_class is None:
-                new_class = label.obj_class.clone(geometry_type=sly.Rectangle)
+            if new_classes.get(new_class.name) is None:
                 new_classes = new_classes.add(new_class)
             new_labels.append(label.clone(bbox, new_class))
     res_meta = meta.clone(obj_classes=new_classes)
