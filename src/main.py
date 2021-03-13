@@ -213,5 +213,6 @@ def main():
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg)
 #@TODO: handle invalid augementations from user (validate augmentations)
 #@TODO: check sum of objects for selected classes - disable buttons
+#@TODO: output resolution
 if __name__ == "__main__":
     sly.main_wrapper("main", main)
