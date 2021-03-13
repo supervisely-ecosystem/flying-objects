@@ -43,6 +43,10 @@ def init_augs(state: dict):
 
 
 def init_progress(data):
+    data["progressPercentPreview"] = 0
+    data["progressCurrentPreview"] = 0
+    data["progressTotalPreview"] = 0
+
     data["progressPercent"] = 0
     data["progressCurrent"] = 0
     data["progressTotal"] = 0
@@ -57,6 +61,15 @@ def refresh_progress(api: sly.Api, task_id, progress: sly.Progress):
         {"field": "data.progressPercent", "payload": int(progress.current * 100 / progress.total)},
         {"field": "data.progressCurrent", "payload": progress.current},
         {"field": "data.progressTotal", "payload": progress.total},
+    ]
+    api.task.set_fields(task_id, fields)
+
+
+def refresh_progress_preview(api: sly.Api, task_id, progress: sly.Progress):
+    fields = [
+        {"field": "data.progressPercentPreview", "payload": int(progress.current * 100 / progress.total)},
+        {"field": "data.progressCurrentPreview", "payload": progress.current},
+        {"field": "data.progressTotalPreview", "payload": progress.total},
     ]
     api.task.set_fields(task_id, fields)
 

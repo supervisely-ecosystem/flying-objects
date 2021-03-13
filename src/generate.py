@@ -6,7 +6,7 @@ import os
 
 import aug
 import rasterize
-from init_ui import refresh_progress
+from init_ui import refresh_progress, refresh_progress_preview
 
 bg_project_id = None
 bg_datasets = None
@@ -68,7 +68,11 @@ def _get_image_using_cache(api: sly.Api, cache_dir, image_id, image_info):
 
 
 @sly.timeit
-def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos, labels, bg_images, cache_dir):
+def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos, labels, bg_images, cache_dir, preview=True):
+    progress_cb = refresh_progress_preview
+    if preview is False:
+        progress_cb = refresh_progress
+
     augs = yaml.safe_load(state["augs"])
     sly.logger.info("Init augs from yaml file")
     aug.init_fg_augs(augs)
@@ -98,7 +102,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
     progress = sly.Progress("Processing foregrounds", len(to_generate))
-    refresh_progress(api, task_id, progress)
+    progress_cb(api, task_id, progress)
 
     progress_every = max(10, int(len(to_generate) / 20))
 
@@ -133,9 +137,9 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
         aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
         progress.iter_done_report()
         if idx % progress_every == 0:  # progress.need_report():
-           refresh_progress(api, task_id, progress)
+           progress_cb(api, task_id, progress)
 
-    refresh_progress(api, task_id, progress)
+    progress_cb(api, task_id, progress)
 
     res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
 

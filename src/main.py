@@ -84,7 +84,7 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
     if len(bg_images) == 0:
         sly.logger.warn("There are no background images")
     else:
-        cache_dir = os.path.join(app.data_dir, "cache_images")
+        cache_dir = os.path.join(app.data_dir, "cache_images_preview")
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
         img, ann, res_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
@@ -125,7 +125,7 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
     if len(bg_images) == 0:
         sly.logger.warn("There are no background images")
     else:
-        cache_dir = os.path.join(app.data_dir, "cache_images")
+        cache_dir = os.path.join(app.data_dir, "cache_images_generate")
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
 
@@ -143,7 +143,7 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         progress = sly.Progress("Generating images", state["imagesCount"])
         refresh_progress_images(api, task_id, progress)
         for i in range(state["imagesCount"]):
-            img, ann, cur_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
+            img, ann, cur_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir, preview=False)
             merged_meta, new_ann = postprocess(state, ann, cur_meta, res_meta)
             if res_meta != merged_meta:
                 api.project.update_meta(res_project.id, merged_meta.to_json())

@@ -105,8 +105,8 @@
             </el-button>
         </div>
         <div class="fflex" v-show="state.previewLoading">
-            <el-progress :percentage="data.progressPercent" style="flex: 1;"></el-progress>
-            <div>{{data.progressCurrent}} / {{data.progressTotal}}</div>
+            <el-progress :percentage="data.progressPercentPreview" style="flex: 1;"></el-progress>
+            <div>{{data.progressCurrentPreview}} / {{data.progressTotalPreview}}</div>
         </div>
         <sly-grid-gallery
                 v-show="Object.keys(data.gallery.content.annotations).length > 0 && !state.previewLoading"
