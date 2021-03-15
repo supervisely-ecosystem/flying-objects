@@ -13,6 +13,7 @@
   "icon": "https://img.icons8.com/color/100/000000/snitch.png",
   "icon_background": "#FFFFFF",
   "context_menu": {
-    "target": ["images_project"]
+    "target": ["images_project"],
+    "context_category": "Synthetic data"
   }
 }
