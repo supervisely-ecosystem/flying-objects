@@ -36,6 +36,15 @@ App generates synthetic data for detection / segmentation / instance segmentatio
 
 <img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/seeds" src="https://i.imgur.com/E5xmBRH.png" width="300"/>   
 
-2. Prepare backgrounds - it is a project or dataset with background images. You can use dataset `01_backgrounds` from project `Seeds` as example
+3. Prepare backgrounds - it is a project or dataset with background images. You can use dataset `01_backgrounds` from project `Seeds` as example
 
-3. Run app from the context menu of project with labeled foregrounds
+4. Run app from the context menu of project with labeled foregrounds:
+
+<img src="https://i.imgur.com/6i0Z8Nm.png"/>
+
+5. Generate synthetic data with different settings and save experiments results to different projects / datasets.
+
+6. Close app manually
+
+
+# Screenshots
