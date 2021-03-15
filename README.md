@@ -24,6 +24,18 @@ App generates synthetic data for detection / segmentation / instance segmentatio
 
 # How To Use
 
+
 1. Label several objects as foregrounds, you can use `Seeds` project from ecosystem.
-2. Prepare backgrounds - separate project or dataset
-3. 
+
+
+1. Add app from ecosystem to your team
+
+<img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/flying-objects" src="https://i.imgur.com/wxe0fR7.png" width="300"/>   
+
+2. Label foregrounds with polygons or masks. You can use demo images from project [`Seeds`](https://ecosystem.supervise.ly/projects/seeds) from Ecosystem
+
+<img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/seeds" src="https://i.imgur.com/E5xmBRH.png" width="300"/>   
+
+2. Prepare backgrounds - it is a project or dataset with background images. You can use dataset `01_backgrounds` from project `Seeds` as example
+
+3. Run app from the context menu of project with labeled foregrounds
