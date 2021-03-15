@@ -63,6 +63,9 @@ def cache_annotations(api: sly.Api, task_id, context, state, app_logger):
                     labels[label.obj_class.name][image_id].append(label)
             progress.iters_done_report(len(batch))
 
+    progress = sly.Progress("App is ready", 1)
+    progress.iter_done_report()
+
 
 @app.callback("select_all_classes")
 @sly.timeit
@@ -200,17 +203,21 @@ def main():
     state["imagesCount"] = 10
 
     #@TODO: ONLY for debug
-    state["bgProjectId"] = project_id
-    state["bgDatasets"] = ["01_background"]
-    state["allDatasets"] = False
-    state["tabName"] = "Classes"
+    # state["bgProjectId"] = project_id
+    # state["bgDatasets"] = ["01_background"]
+    # state["allDatasets"] = True
+    # state["tabName"] = "Classes"
+
+    #@TODO: ONLY for debug
+    # state["bgProjectId"] = 2068
+    # state["bgDatasets"] = []
+    # state["allDatasets"] = True
+    # state["tabName"] = "Classes"
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
-#@TODO: cache annotations check message in task log
-#@TODO: progress message in task list
 #@TODO: ElasticTransformation
-#@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg) aug.resize_foreground
+#@TODO: keep foreground w%/h% on background image
 #@TODO: handle invalid augementations from user (validate augmentations)
 #@TODO: check sum of objects for selected classes - disable buttons
 #@TODO: output resolution
