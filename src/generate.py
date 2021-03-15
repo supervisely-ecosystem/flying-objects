@@ -130,6 +130,8 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
         #sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_img.png"), label_img)
         #sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_mask.png"), label_mask)
 
+        label_img, label_mask = aug.resize_foreground_to_fit_into_image(res_image, label_img, label_mask)
+
         origin = aug.find_origin(res_image.shape, label_mask.shape)
         g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
         res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))

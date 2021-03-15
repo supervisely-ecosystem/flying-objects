@@ -200,13 +200,14 @@ def main():
     state["imagesCount"] = 10
 
     #@TODO: ONLY for debug
-    # state["bgProjectId"] = project_id
-    # state["bgDatasets"] = ["01_background"]
-    # state["allDatasets"] = False
-    # state["tabName"] = "Classes"
+    state["bgProjectId"] = project_id
+    state["bgDatasets"] = ["01_background"]
+    state["allDatasets"] = False
+    state["tabName"] = "Classes"
 
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
+#@TODO: cache annotations check message in task log
 #@TODO: progress message in task list
 #@TODO: ElasticTransformation
 #@TODO: fg->bg range w/h% ??? - check resolution (when fp is placed to bg) aug.resize_foreground
