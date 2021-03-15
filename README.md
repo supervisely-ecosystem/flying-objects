@@ -5,7 +5,8 @@
 
 <p align="center">
   <a href="#Overview">Overview</a> •
-  <a href="#How-To-Use">How To Use</a>
+  <a href="#How-To-Use">How To Use</a> •
+    <a href="#Screenshots">Screenshots</a>
 </p>
 
 
@@ -47,4 +48,14 @@ App generates synthetic data for detection / segmentation / instance segmentatio
 6. Close app manually
 
 
+**Watch demo video**:
+
+
+<a data-key="sly-embeded-video-link" href="https://youtu.be/DazA1SSQOK8" data-video-code="DazA1SSQOK8">
+    <img src="https://i.imgur.com/TDGyy1E.png" alt="SLY_EMBEDED_VIDEO_LINK"  style="max-width:100%;">
+</a>
+
 # Screenshots
+
+<img src="https://i.imgur.com/izY9tR7.png"/>
+
