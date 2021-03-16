@@ -1,8 +1,9 @@
-import supervisely_lib as sly
 import random
 import yaml
 import numpy as np
 import os
+from collections import defaultdict
+import supervisely_lib as sly
 
 import aug
 import rasterize
@@ -76,6 +77,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     augs = yaml.safe_load(state["augs"])
     sly.logger.info("Init augs from yaml file")
     aug.init_fg_augs(augs)
+    visibility_threshold = augs['objects'].get('visibility', 0.8)
 
     classes = state["selectedClasses"]
 
@@ -106,9 +108,12 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
     progress_every = max(10, int(len(to_generate) / 20))
 
+    cover_img = np.zeros(res_image.shape[:2], np.int32)  # size is (h, w)
+    objects_area = defaultdict(lambda: defaultdict(float))
+
     cached_images = {}
     # generate objects
-    for idx, class_name in enumerate(to_generate):
+    for idx, class_name in enumerate(to_generate, start=1):
         if class_name not in labels:
             progress.iter_done_report()
             continue
@@ -132,10 +137,42 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
         label_img, label_mask = aug.resize_foreground_to_fit_into_image(res_image, label_img, label_mask)
 
-        origin = aug.find_origin(res_image.shape, label_mask.shape)
-        g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
-        res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
 
+        #label_area = g.area
+        find_place = False
+        for attempt in range(3):
+            origin = aug.find_origin(res_image.shape, label_mask.shape)
+            g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
+            difference = count_visibility(cover_img, g, idx, origin[0], origin[1])
+
+            allow_placement = True
+            for object_idx, diff in difference.items():
+                new_area = objects_area[object_idx]['current'] - diff
+                visibility_portion = new_area / objects_area[object_idx]['original']
+                if visibility_portion < visibility_threshold:
+                    #sly.logger.warn(f"Object '{idx}', attempt {attempt + 1}: "
+                    #                f"visible portion ({visibility_portion}) < threshold ({visibility_threshold})")
+                    allow_placement = False
+                    break
+
+            if allow_placement is True:
+                find_place = True
+                for object_idx, diff in difference.items():
+                    objects_area[object_idx]['current'] -= diff
+                break
+            else:
+                continue
+
+        if find_place is False:
+            sly.logger.warn(f"Object '{idx}' is skipped: can not be placed to satisfy visibility threshold")
+            continue
+
+        g.draw(cover_img, color=idx)
+        current_obj_area = g.area
+        objects_area[idx]['current'] = current_obj_area
+        objects_area[idx]['original'] = current_obj_area
+
+        res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
         aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
         progress.iter_done_report()
         if idx % progress_every == 0:  # progress.need_report():
@@ -153,3 +190,28 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     res_meta, res_ann = rasterize.convert_to_nonoverlapping(res_meta, res_ann)
 
     return res_image, res_ann, res_meta
+
+
+def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
+    sec_h, sec_w = bitmap._data.shape
+    crop = cover_img[y:y + sec_h, x:x + sec_w].copy()
+
+    before_values, before_counts = np.unique(crop, return_counts=True)
+    difference = {}
+    for value, count in zip(before_values, before_counts):
+        if value == 0:
+            continue
+        difference[value] = count
+
+    crop[bitmap._data] = idx
+    after_values, after_counts = np.unique(crop, return_counts=True)
+    for value, count in zip(after_values, after_counts):
+        if value == 0 or value == idx:
+            continue
+        difference[value] -= count
+        if difference[value] < 0:
+            raise ValueError("Impossible difference")
+        if difference[value] == 0:
+            difference.pop(value)
+
+    return difference
