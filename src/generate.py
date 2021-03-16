@@ -157,8 +157,6 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
             if allow_placement is True:
                 find_place = True
-                for object_idx, diff in difference.items():
-                    objects_area[object_idx]['current'] -= diff
                 break
             else:
                 continue
@@ -167,13 +165,23 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
             sly.logger.warn(f"Object '{idx}' is skipped: can not be placed to satisfy visibility threshold")
             continue
 
-        g.draw(cover_img, color=idx)
-        current_obj_area = g.area
-        objects_area[idx]['current'] = current_obj_area
-        objects_area[idx]['original'] = current_obj_area
+        try:
+            aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
+            g.draw(cover_img, color=idx)
 
-        res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
-        aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
+            for object_idx, diff in difference.items():
+                objects_area[object_idx]['current'] -= diff
+
+            current_obj_area = g.area
+            objects_area[idx]['current'] = current_obj_area
+            objects_area[idx]['original'] = current_obj_area
+            res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
+
+        except Exception as e:
+            #sly.logger.warn(repr(e))
+            sly.logger.warn(f"FG placement error:: label shape: {label_img.shape}; mask shape: {label_mask.shape}",
+                            extra={"error": repr(e)})
+
         progress.iter_done_report()
         if idx % progress_every == 0:  # progress.need_report():
            progress_cb(api, task_id, progress)
