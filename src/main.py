@@ -174,6 +174,19 @@ def main():
 
     init_input_project(app.public_api, data, project_info)
 
+    image_id = 901208
+    import json
+    ann_json = app.public_api.annotation.download(image_id).annotation
+    print(json.dumps(ann_json, indent=4))
+    ann = sly.Annotation.from_json(ann_json, meta)
+    import numpy as np
+    machine_mask = np.zeros(shape=ann.img_size + (3,), dtype=np.uint8)
+    ann.draw(machine_mask, color=[255, 255, 255])
+    sly.image.write("./abc.png", machine_mask)
+
+
+    #@TODO: check mask
+
     # background tab
     state["tabName"] = "Backgrounds"
     state["teamId"] = team_id
