@@ -5,7 +5,7 @@
     "synthetic data"
   ],
   "description": "Generate synthetic data: flying foregrounds on top of backgrounds",
-  "docker_image": "supervisely/base-py-sdk:6.1.81",
+  "docker_image": "supervisely/base-py-sdk:6.1.82",
   "main_script": "src/main.py",
   "gui_template": "src/gui.html",
   "task_location": "workspace_tasks",
