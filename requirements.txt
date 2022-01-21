@@ -1,3 +1,4 @@
-# supervisely==6.1.83
+supervisely==6.1.83
 PyYAML==5.4.1
 albumentations==0.5.2
+opencv-python-headless==4.1.2.30
