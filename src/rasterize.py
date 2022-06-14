@@ -1,5 +1,5 @@
 import numpy as np
-import supervisely_lib as sly
+import supervisely as sly
 
 
 def need_convert(geometry_type) -> bool:
