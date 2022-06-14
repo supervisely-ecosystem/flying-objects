@@ -3,7 +3,7 @@ import random
 import imgaug.augmenters as iaa
 from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 from ast import literal_eval
-import supervisely_lib as sly
+import supervisely as sly
 import albumentations as A
 
 aug_color_fg = None

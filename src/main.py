@@ -1,12 +1,13 @@
 import os
 from collections import defaultdict
-import supervisely_lib as sly
+import supervisely as sly
+from supervisely.app.v1.app_service import AppService
 
 from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project, refresh_progress_images
 from generate import update_bg_images, synthesize
 from postprocess import postprocess, highlight_instances
 
-app: sly.AppService = sly.AppService()
+app: AppService = AppService()
 
 team_id = int(os.environ['context.teamId'])
 workspace_id = int(os.environ['context.workspaceId'])
@@ -107,7 +108,7 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         gallery["content"]["projectMeta"] = res_meta.to_json()
         gallery["content"]["annotations"] = {
             "preview": {
-                "url": file_info.full_storage_url,
+                "url": file_info.storage_path,
                 "figures": [label.to_json() for label in ann.labels]
             }
         }

@@ -1,6 +1,6 @@
 import numpy as np
-import supervisely_lib as sly
-from supervisely_lib._utils import generate_free_name
+import supervisely as sly
+from supervisely._utils import generate_free_name
 
 
 def postprocess(state, ann: sly.Annotation, cur_meta: sly.ProjectMeta, res_meta: sly.ProjectMeta) \
