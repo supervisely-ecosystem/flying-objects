@@ -1,5 +1,5 @@
 <div align="center" markdown>
-<img src="https://i.imgur.com/pCcPRZn.png"/>
+<img src="https://user-images.githubusercontent.com/106374579/182824459-291c34dc-0a5a-4c97-a297-d1ed4143c58d.png"/>
 
 # Flying Objects
 
