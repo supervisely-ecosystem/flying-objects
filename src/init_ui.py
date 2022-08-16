@@ -1,19 +1,24 @@
-import os
-import yaml
-from pathlib import Path
-import sys
 import json
+import os
+import sys
+from pathlib import Path
+
 import supervisely as sly
+import yaml
 
 
 def init_input_project(api: sly.Api, data: dict, project_info):
     data["projectId"] = project_info.id
     data["projectName"] = project_info.name
-    data["projectPreviewUrl"] = api.image.preview_url(project_info.reference_image_url, 100, 100)
+    data["projectPreviewUrl"] = api.image.preview_url(
+        project_info.reference_image_url, 100, 100
+    )
     data["projectItemsCount"] = project_info.items_count
 
 
-def init_classes_stats(api: sly.Api, data: dict, state: dict, project_info, project_meta: sly.ProjectMeta):
+def init_classes_stats(
+    api: sly.Api, data: dict, state: dict, project_info, project_meta: sly.ProjectMeta
+):
     stats = api.project.get_stats(project_info.id)
     class_images = {}
     for item in stats["images"]["objectClasses"]:
@@ -34,12 +39,12 @@ def init_classes_stats(api: sly.Api, data: dict, state: dict, project_info, proj
 
 def init_augs(state: dict):
     root_source_path = str(Path(sys.argv[0]).parents[0])
-    with open(os.path.join(root_source_path, "augs.yaml"), 'r') as file:
+    with open(os.path.join(root_source_path, "augs.yaml"), "r") as file:
         augs_str = file.read()
     state["augs"] = augs_str
 
     d = yaml.safe_load(augs_str)
-    #print(json.dumps(d, indent=4))
+    # print(json.dumps(d, indent=4))
 
 
 def init_progress(data):
@@ -58,7 +63,10 @@ def init_progress(data):
 
 def refresh_progress(api: sly.Api, task_id, progress: sly.Progress):
     fields = [
-        {"field": "data.progressPercent", "payload": int(progress.current * 100 / progress.total)},
+        {
+            "field": "data.progressPercent",
+            "payload": int(progress.current * 100 / progress.total),
+        },
         {"field": "data.progressCurrent", "payload": progress.current},
         {"field": "data.progressTotal", "payload": progress.total},
     ]
@@ -67,7 +75,10 @@ def refresh_progress(api: sly.Api, task_id, progress: sly.Progress):
 
 def refresh_progress_preview(api: sly.Api, task_id, progress: sly.Progress):
     fields = [
-        {"field": "data.progressPercentPreview", "payload": int(progress.current * 100 / progress.total)},
+        {
+            "field": "data.progressPercentPreview",
+            "payload": int(progress.current * 100 / progress.total),
+        },
         {"field": "data.progressCurrentPreview", "payload": progress.current},
         {"field": "data.progressTotalPreview", "payload": progress.total},
     ]
@@ -76,7 +87,10 @@ def refresh_progress_preview(api: sly.Api, task_id, progress: sly.Progress):
 
 def refresh_progress_images(api: sly.Api, task_id, progress: sly.Progress):
     fields = [
-        {"field": "data.progressPercentImages", "payload": int(progress.current * 100 / progress.total)},
+        {
+            "field": "data.progressPercentImages",
+            "payload": int(progress.current * 100 / progress.total),
+        },
         {"field": "data.progressCurrentImage", "payload": progress.current},
         {"field": "data.progressTotalImages", "payload": progress.total},
     ]
@@ -88,5 +102,3 @@ def init_res_project(data, state):
     state["resProjectName"] = None
     data["resProjectPreviewUrl"] = None
     data["started"] = False
-
-
