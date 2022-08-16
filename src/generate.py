@@ -14,11 +14,10 @@ from init_ui import refresh_progress, refresh_progress_preview
 bg_project_id = None
 bg_datasets = None
 bg_images = None
-bg_anns = None
 
 
 def update_bg_images(api: sly.Api, state):
-    global bg_project_id, bg_datasets, bg_images, bg_anns
+    global bg_project_id, bg_datasets, bg_images
 
     cur_bg_project_id = state["bgProjectId"]
     cur_bg_project_meta = sly.ProjectMeta.from_json(
