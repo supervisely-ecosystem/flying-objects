@@ -124,7 +124,8 @@ def synthesize(
 
     for class_name in classes:
         original_class: sly.ObjClass = meta.get_obj_class(class_name)
-        res_classes.append(original_class.clone(geometry_type=sly.Bitmap))
+        if original_class not in res_classes:
+            res_classes.append(original_class.clone(geometry_type=sly.Bitmap))
         count_range = augs["objects"]["count"]
         count = random.randint(*count_range)
         to_generate.extend(class_name for _ in range(count))
