@@ -30,11 +30,11 @@ def update_bg_images(api: sly.Api, state):
         cur_bg_datasets = [info.name for info in datasets_info]
 
     if (
-        bg_project_id is not None
-        and bg_datasets is not None
-        and bg_images is not None
-        and cur_bg_project_id == bg_project_id
-        and set(cur_bg_datasets) == set(bg_datasets)
+            bg_project_id is not None
+            and bg_datasets is not None
+            and bg_images is not None
+            and cur_bg_project_id == bg_project_id
+            and set(cur_bg_datasets) == set(bg_datasets)
     ):
         sly.logger.info("Keep previous background images")
     else:
@@ -86,15 +86,15 @@ def _get_image_using_cache(api: sly.Api, cache_dir, image_id, image_info):
 
 @sly.timeit
 def synthesize(
-    api: sly.Api,
-    task_id,
-    state,
-    meta: sly.ProjectMeta,
-    image_infos,
-    labels,
-    bg_images,
-    cache_dir,
-    preview=True,
+        api: sly.Api,
+        task_id,
+        state,
+        meta: sly.ProjectMeta,
+        image_infos,
+        labels,
+        bg_images,
+        cache_dir,
+        preview=True,
 ):
     progress_cb = refresh_progress_preview
     if preview is False:
@@ -228,4 +228,21 @@ def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
 
 
 def merge_bg_proj_meta(img_proj_meta: sly.ProjectMeta, bg_proj_meta: sly.ProjectMeta):
-    return img_proj_meta.merge(bg_proj_meta)
+    img_proj_meta_classes = [obj_class.name for obj_class in img_proj_meta.obj_classes]
+    for bg_class in bg_proj_meta.obj_classes:
+        if bg_class.name in img_proj_meta_classes:
+            img_class = img_proj_meta.get_obj_class(bg_class.name)
+            if img_class.geometry_type != bg_class.geometry_type:
+                img_class_geometry_type = img_class.geometry_type
+                bg_class_geometry_type = bg_class.geometry_type
+                img_proj_meta = img_proj_meta.delete_obj_class(obj_class_name=bg_class.name)
+                bg_class = bg_class.clone(geometry_type=sly.AnyGeometry)
+                sly.logger.warn(
+                    f"Found duplicated class name in background and given images project metas with different geometry types. \n"
+                    f"Background project class: {bg_class.name} - {bg_class_geometry_type} \n"
+                    f"Images project class: {img_class.name} - {img_class_geometry_type} \n"
+                    f"Class: {bg_class.name} geometry will be converted to {bg_class.geometry_type}."
+
+                )
+        img_proj_meta = img_proj_meta.add_obj_class(bg_class)
+    return img_proj_meta
