@@ -20,7 +20,7 @@ def update_bg_images(api: sly.Api, state):
     global bg_project_id, bg_datasets, bg_images
 
     cur_bg_project_id = state["bgProjectId"]
-    cur_bg_project_meta = sly.ProjectMeta.from_json(
+    g.bg_meta = sly.ProjectMeta.from_json(
         api.project.get_meta(cur_bg_project_id)
     )
 
@@ -46,8 +46,8 @@ def update_bg_images(api: sly.Api, state):
             bg_images.extend(api.image.get_list(dataset_info.id))
 
     if state["backgroundLabels"] == "merge":
-        g.meta = merge_bg_proj_meta(
-            img_proj_meta=g.meta, bg_proj_meta=cur_bg_project_meta
+        g.meta, g.bg_meta = merge_bg_proj_meta(
+            img_proj_meta=g.meta, bg_proj_meta=g.bg_meta
         )
 
     sly.logger.info(f"Background datasets: {bg_datasets}")
@@ -111,25 +111,28 @@ def synthesize(
 
     if state["backgroundLabels"] == "merge":
         bg_ann = sly.Annotation.from_json(
-            data=api.annotation.download_json(bg_info.id), project_meta=g.meta
+            data=api.annotation.download_json(bg_info.id), project_meta=g.bg_meta
         )
         res_labels = bg_ann.labels
         res_classes = [label.obj_class for label in bg_ann.labels]
+        res_classes_names = [label.obj_class.name for label in bg_ann.labels]
     else:
         res_labels = []
         res_classes = []
+        res_classes_names = []
 
     to_generate = []
     res_image = bg.copy()
 
     for class_name in classes:
         original_class: sly.ObjClass = meta.get_obj_class(class_name)
-        if original_class not in res_classes:
-            res_classes.append(original_class.clone(geometry_type=sly.Bitmap))
+        if original_class.name not in res_classes_names:
+            res_classes.append(original_class)
         count_range = augs["objects"]["count"]
         count = random.randint(*count_range)
         to_generate.extend(class_name for _ in range(count))
     random.shuffle(to_generate)
+    res_classes = convert_res_classes_to_bitmap(res_classes)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
@@ -229,20 +232,24 @@ def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
 
 def merge_bg_proj_meta(img_proj_meta: sly.ProjectMeta, bg_proj_meta: sly.ProjectMeta):
     img_proj_meta_classes = [obj_class.name for obj_class in img_proj_meta.obj_classes]
+
     for bg_class in bg_proj_meta.obj_classes:
         if bg_class.name in img_proj_meta_classes:
             img_class = img_proj_meta.get_obj_class(bg_class.name)
-            if img_class.geometry_type != bg_class.geometry_type:
-                img_class_geometry_type = img_class.geometry_type
-                bg_class_geometry_type = bg_class.geometry_type
-                img_proj_meta = img_proj_meta.delete_obj_class(obj_class_name=bg_class.name)
-                bg_class = bg_class.clone(geometry_type=sly.AnyGeometry)
-                sly.logger.warn(
-                    f"Found duplicated class name in background and given images project metas with different geometry types. \n"
-                    f"Background project class: {bg_class.name} - {bg_class_geometry_type} \n"
-                    f"Images project class: {img_class.name} - {img_class_geometry_type} \n"
-                    f"Class: {bg_class.name} geometry will be converted to {bg_class.geometry_type}."
+            if img_class.geometry_type == bg_class.geometry_type:
+                continue
+            img_class_geometry_type = img_class.geometry_type
+            bg_class_geometry_type = bg_class.geometry_type
+            img_proj_meta = img_proj_meta.delete_obj_class(obj_class_name=bg_class.name)
+            bg_class = bg_class.clone(geometry_type=sly.Bitmap)
+            sly.logger.warn(f"Found duplicated class name in background and given images project metas with different geometry types. \nBackground project class: {bg_class.name} - {bg_class_geometry_type} \nImages project class: {img_class.name} - {img_class_geometry_type} \nClass: {bg_class.name} geometry will be converted to {bg_class.geometry_type}.")
 
-                )
         img_proj_meta = img_proj_meta.add_obj_class(bg_class)
-    return img_proj_meta
+    return img_proj_meta, bg_proj_meta
+
+
+def convert_res_classes_to_bitmap(res_classes):
+    for idx, obj_class in enumerate(res_classes):
+        if obj_class.geometry_type != sly.Bitmap:
+            res_classes[idx] = obj_class.clone(geometry_type=sly.Bitmap)
+    return res_classes
