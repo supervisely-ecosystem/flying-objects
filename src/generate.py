@@ -114,8 +114,8 @@ def synthesize(
             data=api.annotation.download_json(bg_info.id), project_meta=g.bg_meta
         )
         res_labels = bg_ann.labels
-        res_classes = [label.obj_class for label in bg_ann.labels]
-        res_classes_names = [label.obj_class.name for label in bg_ann.labels]
+        res_classes = [obj_class for obj_class in g.bg_meta.obj_classes]
+        res_classes_names = [obj_class.name for obj_class in g.bg_meta.obj_classes]
     else:
         res_labels = []
         res_classes = []
