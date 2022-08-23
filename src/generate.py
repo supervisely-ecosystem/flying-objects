@@ -45,10 +45,10 @@ def update_bg_images(api: sly.Api, state):
             dataset_info = api.dataset.get_info_by_name(bg_project_id, dataset_name)
             bg_images.extend(api.image.get_list(dataset_info.id))
 
-    if state["backgroundLabels"] == "merge":
-        g.meta, g.bg_meta = merge_bg_proj_meta(
-            img_proj_meta=g.meta, bg_proj_meta=g.bg_meta
-        )
+    # if state["backgroundLabels"] == "merge":
+    #     g.meta, g.bg_meta = merge_bg_proj_meta(
+    #         img_proj_meta=g.meta, bg_proj_meta=g.bg_meta
+    #     )
 
     sly.logger.info(f"Background datasets: {bg_datasets}")
     sly.logger.info(f"Background images count: {len(bg_images)}")
@@ -104,22 +104,22 @@ def synthesize(
     aug.init_fg_augs(augs)
     visibility_threshold = augs["objects"].get("visibility", 0.8)
     classes = state["selectedClasses"]
-    bg_info = random.choice(bg_images)
+    bg_image = random.choice(bg_images)
     sly.logger.info("Download background")
-    bg = api.image.download_np(bg_info.id)
+    bg = api.image.download_np(bg_image.id)
     sly.logger.debug(f"BG shape: {bg.shape}")
 
-    if state["backgroundLabels"] == "merge":
-        bg_ann = sly.Annotation.from_json(
-            data=api.annotation.download_json(bg_info.id), project_meta=g.bg_meta
-        )
-        res_labels = bg_ann.labels
-        res_classes = [obj_class for obj_class in g.bg_meta.obj_classes]
-        res_classes_names = [obj_class.name for obj_class in g.bg_meta.obj_classes]
-    else:
-        res_labels = []
-        res_classes = []
-        res_classes_names = []
+    # if state["backgroundLabels"] == "merge":
+    #     bg_ann = sly.Annotation.from_json(
+    #         data=api.annotation.download_json(bg_info.id), project_meta=g.bg_meta
+    #     )
+    # res_labels = bg_ann.labels
+    # res_classes = [obj_class for obj_class in g.bg_meta.obj_classes]
+    # res_classes_names = [obj_class.name for obj_class in g.bg_meta.obj_classes]
+    # else:
+    res_labels = []
+    res_classes = []
+    res_classes_names = []
 
     to_generate = []
     res_image = bg.copy()
@@ -132,7 +132,7 @@ def synthesize(
         count = random.randint(*count_range)
         to_generate.extend(class_name for _ in range(count))
     random.shuffle(to_generate)
-    res_classes = convert_res_classes_to_bitmap(res_classes)
+    # res_classes = convert_res_classes_to_bitmap(res_classes)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
@@ -206,7 +206,7 @@ def synthesize(
     progress_cb(api, task_id, progress)
     res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
     res_meta, res_ann = rasterize.convert_to_nonoverlapping(res_meta, res_ann)
-    return res_image, res_ann, res_meta
+    return res_image, bg_image, res_ann, res_meta
 
 
 def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
@@ -230,26 +230,19 @@ def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
     return difference
 
 
-def merge_bg_proj_meta(img_proj_meta: sly.ProjectMeta, bg_proj_meta: sly.ProjectMeta):
-    img_proj_meta_classes = [obj_class.name for obj_class in img_proj_meta.obj_classes]
-
+def merge_bg_img_metas(img_proj_meta: sly.ProjectMeta, bg_proj_meta: sly.ProjectMeta):
+    img_proj_meta_classes_names = [obj_class.name for obj_class in img_proj_meta.obj_classes]
     for bg_class in bg_proj_meta.obj_classes:
-        if bg_class.name in img_proj_meta_classes:
-            img_class = img_proj_meta.get_obj_class(bg_class.name)
-            if img_class.geometry_type == bg_class.geometry_type:
-                continue
-            img_class_geometry_type = img_class.geometry_type
-            bg_class_geometry_type = bg_class.geometry_type
-            img_proj_meta = img_proj_meta.delete_obj_class(obj_class_name=bg_class.name)
-            bg_class = bg_class.clone(geometry_type=sly.Bitmap)
-            sly.logger.warn(f"Found duplicated class name in background and given images project metas with different geometry types. \nBackground project class: {bg_class.name} - {bg_class_geometry_type} \nImages project class: {img_class.name} - {img_class_geometry_type} \nClass: {bg_class.name} geometry will be converted to {bg_class.geometry_type}.")
-
-        img_proj_meta = img_proj_meta.add_obj_class(bg_class)
-    return img_proj_meta, bg_proj_meta
+        if bg_class.name in img_proj_meta_classes_names:
+            bg_class = bg_class.clone(name=f"{bg_class.name}-background")
+        if img_proj_meta.get_obj_class(bg_class.name) is None:
+            sly.logger.warn(
+                f"Found duplicated class names in background and images project metas. "
+                f"\nBackground project class: {bg_class.name} will be renamed to {bg_class.name}-background"
+            )
+            img_proj_meta = img_proj_meta.add_obj_class(bg_class)
+    return img_proj_meta
 
 
-def convert_res_classes_to_bitmap(res_classes):
-    for idx, obj_class in enumerate(res_classes):
-        if obj_class.geometry_type != sly.Bitmap:
-            res_classes[idx] = obj_class.clone(geometry_type=sly.Bitmap)
-    return res_classes
+def merge_bg_img_ann(img_ann: sly.Annotation, bg_ann: sly.Annotation):
+    return img_ann.add_labels(bg_ann.labels).add_tags(bg_ann.img_tags)
