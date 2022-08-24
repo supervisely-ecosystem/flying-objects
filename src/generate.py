@@ -119,7 +119,6 @@ def synthesize(
         count = random.randint(*count_range)
         to_generate.extend(class_name for _ in range(count))
     random.shuffle(to_generate)
-    # res_classes = convert_res_classes_to_bitmap(res_classes)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
