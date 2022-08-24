@@ -45,11 +45,6 @@ def update_bg_images(api: sly.Api, state):
             dataset_info = api.dataset.get_info_by_name(bg_project_id, dataset_name)
             bg_images.extend(api.image.get_list(dataset_info.id))
 
-    # if state["backgroundLabels"] == "merge":
-    #     g.meta, g.bg_meta = merge_bg_proj_meta(
-    #         img_proj_meta=g.meta, bg_proj_meta=g.bg_meta
-    #     )
-
     sly.logger.info(f"Background datasets: {bg_datasets}")
     sly.logger.info(f"Background images count: {len(bg_images)}")
     return bg_images
@@ -109,14 +104,6 @@ def synthesize(
     bg = api.image.download_np(bg_image.id)
     sly.logger.debug(f"BG shape: {bg.shape}")
 
-    # if state["backgroundLabels"] == "merge":
-    #     bg_ann = sly.Annotation.from_json(
-    #         data=api.annotation.download_json(bg_info.id), project_meta=g.bg_meta
-    #     )
-    # res_labels = bg_ann.labels
-    # res_classes = [obj_class for obj_class in g.bg_meta.obj_classes]
-    # res_classes_names = [obj_class.name for obj_class in g.bg_meta.obj_classes]
-    # else:
     res_labels = []
     res_classes = []
     res_classes_names = []
@@ -231,18 +218,19 @@ def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
 
 
 def merge_bg_img_metas(img_proj_meta: sly.ProjectMeta, bg_proj_meta: sly.ProjectMeta):
-    img_proj_meta_classes_names = [obj_class.name for obj_class in img_proj_meta.obj_classes]
+    new_bg_classes = []
     for bg_class in bg_proj_meta.obj_classes:
-        if bg_class.name in img_proj_meta_classes_names:
-            bg_class = bg_class.clone(name=f"{bg_class.name}-background")
-        if img_proj_meta.get_obj_class(bg_class.name) is None:
-            sly.logger.warn(
-                f"Found duplicated class names in background and images project metas. "
-                f"\nBackground project class: {bg_class.name} will be renamed to {bg_class.name}-background"
-            )
-            img_proj_meta = img_proj_meta.add_obj_class(bg_class)
+        bg_class = bg_class.clone(name=f"{bg_class.name}-background")
+        if bg_class in img_proj_meta.obj_classes: continue
+        else: new_bg_classes.append(bg_class)
+    if new_bg_classes:
+        img_proj_meta = img_proj_meta.add_obj_classes(new_bg_classes)
     return img_proj_meta
 
 
-def merge_bg_img_ann(img_ann: sly.Annotation, bg_ann: sly.Annotation):
-    return img_ann.add_labels(bg_ann.labels).add_tags(bg_ann.img_tags)
+def merge_bg_img_ann(img_ann: sly.Annotation, bg_ann: sly.Annotation, merged_meta: sly.ProjectMeta):
+    new_labels = []
+    for label in bg_ann.labels:
+        obj_class = merged_meta.get_obj_class(f"{label.obj_class.name}-background")
+        new_labels.append(label.clone(obj_class=obj_class, tags=label.tags))
+    return img_ann.add_labels(labels=new_labels).add_tags(tags=bg_ann.img_tags)

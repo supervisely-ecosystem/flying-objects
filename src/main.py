@@ -57,6 +57,14 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
             api, task_id, state, g.meta, g.images_info, g.labels, bg_images, cache_dir
         )
         res_meta, ann = postprocess(state, ann, res_meta, sly.ProjectMeta())
+
+        if state["backgroundLabels"] == "merge":
+            bg_ann = sly.Annotation.from_json(
+                data=api.annotation.download_json(bg_img.id), project_meta=g.bg_meta
+            )
+            res_meta = merge_bg_img_metas(res_meta, g.bg_meta)
+            ann = merge_bg_img_ann(ann, bg_ann, res_meta)
+
         if state["taskType"] == "inst-seg" and state["highlightInstances"] is True:
             res_meta, ann = highlight_instances(res_meta, ann)
         src_img_path = os.path.join(cache_dir, "res.png")
@@ -125,22 +133,20 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
             )
             merged_meta, new_ann = postprocess(state, ann, cur_meta, res_meta)
 
+            bg_ann, new_bg_classes = None, None
             if state["backgroundLabels"] == "merge":
                 bg_ann = sly.Annotation.from_json(
                     data=api.annotation.download_json(bg_img.id), project_meta=g.bg_meta
                 )
-
+                merged_meta = merge_bg_img_metas(merged_meta, g.bg_meta)
             if res_meta != merged_meta:
-                if state["backgroundLabels"] == "merge":
-                    merged_meta = merge_bg_img_metas(merged_meta, g.bg_meta)
-
                 api.project.update_meta(res_project.id, merged_meta.to_json())
                 res_meta = merged_meta
             image_info = api.image.upload_np(
                 res_dataset.id, f"{i + res_dataset.items_count}.png", img
             )
             if state["backgroundLabels"] == "merge":
-                new_ann = merge_bg_img_ann(new_ann, bg_ann)
+                new_ann = merge_bg_img_ann(new_ann, bg_ann, merged_meta)
             api.annotation.upload_ann(image_info.id, new_ann)
             progress.iter_done_report()
             if progress.need_report():
