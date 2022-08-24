@@ -119,6 +119,7 @@ def synthesize(
         count = random.randint(*count_range)
         to_generate.extend(class_name for _ in range(count))
     random.shuffle(to_generate)
+    res_classes = convert_res_classes_to_bitmap(res_classes)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
@@ -216,12 +217,21 @@ def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
     return difference
 
 
+def convert_res_classes_to_bitmap(res_classes):
+    for idx, obj_class in enumerate(res_classes):
+        if obj_class.geometry_type != sly.Bitmap:
+            res_classes[idx] = obj_class.clone(geometry_type=sly.Bitmap)
+    return res_classes
+
+
 def merge_bg_img_metas(img_proj_meta: sly.ProjectMeta, bg_proj_meta: sly.ProjectMeta):
     new_bg_classes = []
     for bg_class in bg_proj_meta.obj_classes:
         bg_class = bg_class.clone(name=f"{bg_class.name}-background")
-        if bg_class in img_proj_meta.obj_classes: continue
-        else: new_bg_classes.append(bg_class)
+        if bg_class in img_proj_meta.obj_classes:
+            continue
+        else:
+            new_bg_classes.append(bg_class)
     if new_bg_classes:
         img_proj_meta = img_proj_meta.add_obj_classes(new_bg_classes)
     return img_proj_meta
