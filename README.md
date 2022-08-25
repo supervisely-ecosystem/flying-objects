@@ -20,7 +20,11 @@
 
 # Overview
 
-App generates synthetic data for detection / segmentation / instance segmentation tasks. It copies labeled objects (foregrounds), applies augmentations and pastes them to background images.
+App generates synthetic data for detection / segmentation / instance segmentation tasks.
+It copies labeled objects (foregrounds), applies augmentations and pastes them to background images.
+App also has an option to copy classes from the selected background project as a foreground objects, 
+it applies only for selected classes that are present in both foreground and background projects and are similar, 
+e.g: foreground class: lemon, and background class: lemon.
 
 # How To Use
 
