@@ -24,8 +24,13 @@ def update_bg_images(api, state):
         datasets_info = api.dataset.get_list(cur_bg_project_id)
         cur_bg_datasets = [info.name for info in datasets_info]
 
-    if bg_project_id is not None and bg_datasets is not None and bg_images is not None and \
-       cur_bg_project_id == bg_project_id and set(cur_bg_datasets) == set(bg_datasets):
+    if (
+        bg_project_id is not None
+        and bg_datasets is not None
+        and bg_images is not None
+        and cur_bg_project_id == bg_project_id
+        and set(cur_bg_datasets) == set(bg_datasets)
+    ):
         sly.logger.info("Keep previous background images")
     else:
         bg_project_id = cur_bg_project_id
@@ -40,7 +45,7 @@ def update_bg_images(api, state):
     return bg_images
 
 
-#@sly.timeit
+# @sly.timeit
 def get_label_foreground(img, label):
     bbox = label.geometry.to_bbox()
     img_crop = sly.image.crop(img, bbox)
@@ -51,17 +56,19 @@ def get_label_foreground(img, label):
     return img_crop, mask
 
 
-#@sly.timeit
+# @sly.timeit
 def augment_foreground(image, mask):
     augmented = aug.transform_fg(image=image, mask=mask)
-    image_aug = augmented['image']
-    mask_aug = augmented['mask']
+    image_aug = augmented["image"]
+    mask_aug = augmented["mask"]
     return image_aug, mask_aug
 
 
-#@sly.timeit
+# @sly.timeit
 def _get_image_using_cache(api: sly.Api, cache_dir, image_id, image_info):
-    img_path = os.path.join(cache_dir, f"{image_id}{sly.fs.get_file_ext(image_info.name)}")
+    img_path = os.path.join(
+        cache_dir, f"{image_id}{sly.fs.get_file_ext(image_info.name)}"
+    )
     if not sly.fs.file_exists(img_path):
         api.image.download_path(image_id, img_path)
     source_image = sly.image.read(img_path)
@@ -69,7 +76,17 @@ def _get_image_using_cache(api: sly.Api, cache_dir, image_id, image_info):
 
 
 @sly.timeit
-def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos, labels, bg_images, cache_dir, preview=True):
+def synthesize(
+    api: sly.Api,
+    task_id,
+    state,
+    meta: sly.ProjectMeta,
+    image_infos,
+    labels,
+    bg_images,
+    cache_dir,
+    preview=True,
+):
     progress_cb = refresh_progress_preview
     if preview is False:
         progress_cb = refresh_progress
@@ -77,7 +94,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     augs = yaml.safe_load(state["augs"])
     sly.logger.info("Init augs from yaml file")
     aug.init_fg_augs(augs)
-    visibility_threshold = augs['objects'].get('visibility', 0.8)
+    visibility_threshold = augs["objects"].get("visibility", 0.8)
 
     classes = state["selectedClasses"]
 
@@ -102,6 +119,19 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
             to_generate.append(class_name)
     random.shuffle(to_generate)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
+
+    if state["backgroundLabels"] == "smart merge":
+        for bg_label in bg_ann.labels:
+            obj_class = res_meta.get_obj_class(bg_label.obj_class.name)
+            if obj_class is None:
+                # ignore bg_label, class not selected in FG project
+                continue
+            if type(bg_label.geometry) == sly.Bitmap:
+                res_labels.append(bg_label.clone(obj_class=obj_class))
+                continue
+            if type(bg_label.geometry) == sly.Polygon:
+                res_labels.extend(bg_label.convert(obj_class))
+                continue
 
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
@@ -128,29 +158,33 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
             cached_images[image_id] = source_image
 
         label_img, label_mask = get_label_foreground(source_image, label)
-        #sly.image.write(os.path.join(cache_dir, f"{index}_label_img.png"), label_img)
-        #sly.image.write(os.path.join(cache_dir, f"{index}_label_mask.png"), label_mask)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_label_img.png"), label_img)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_label_mask.png"), label_mask)
 
         label_img, label_mask = aug.apply_to_foreground(label_img, label_mask)
-        #sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_img.png"), label_img)
-        #sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_mask.png"), label_mask)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_img.png"), label_img)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_mask.png"), label_mask)
 
-        label_img, label_mask = aug.resize_foreground_to_fit_into_image(res_image, label_img, label_mask)
+        label_img, label_mask = aug.resize_foreground_to_fit_into_image(
+            res_image, label_img, label_mask
+        )
 
-
-        #label_area = g.area
+        # label_area = g.area
         find_place = False
         for attempt in range(3):
             origin = aug.find_origin(res_image.shape, label_mask.shape)
-            g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
+            g = sly.Bitmap(
+                label_mask[:, :, 0].astype(bool),
+                origin=sly.PointLocation(row=origin[1], col=origin[0]),
+            )
             difference = count_visibility(cover_img, g, idx, origin[0], origin[1])
 
             allow_placement = True
             for object_idx, diff in difference.items():
-                new_area = objects_area[object_idx]['current'] - diff
-                visibility_portion = new_area / objects_area[object_idx]['original']
+                new_area = objects_area[object_idx]["current"] - diff
+                visibility_portion = new_area / objects_area[object_idx]["original"]
                 if visibility_portion < visibility_threshold:
-                    #sly.logger.warn(f"Object '{idx}', attempt {attempt + 1}: "
+                    # sly.logger.warn(f"Object '{idx}', attempt {attempt + 1}: "
                     #                f"visible portion ({visibility_portion}) < threshold ({visibility_threshold})")
                     allow_placement = False
                     break
@@ -162,7 +196,9 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
                 continue
 
         if find_place is False:
-            sly.logger.warn(f"Object '{idx}' is skipped: can not be placed to satisfy visibility threshold")
+            sly.logger.warn(
+                f"Object '{idx}' is skipped: can not be placed to satisfy visibility threshold"
+            )
             continue
 
         try:
@@ -170,21 +206,23 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
             g.draw(cover_img, color=idx)
 
             for object_idx, diff in difference.items():
-                objects_area[object_idx]['current'] -= diff
+                objects_area[object_idx]["current"] -= diff
 
             current_obj_area = g.area
-            objects_area[idx]['current'] = current_obj_area
-            objects_area[idx]['original'] = current_obj_area
+            objects_area[idx]["current"] = current_obj_area
+            objects_area[idx]["original"] = current_obj_area
             res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
 
         except Exception as e:
-            #sly.logger.warn(repr(e))
-            sly.logger.warn(f"FG placement error:: label shape: {label_img.shape}; mask shape: {label_mask.shape}",
-                            extra={"error": repr(e)})
+            # sly.logger.warn(repr(e))
+            sly.logger.warn(
+                f"FG placement error:: label shape: {label_img.shape}; mask shape: {label_mask.shape}",
+                extra={"error": repr(e)},
+            )
 
         progress.iter_done_report()
         if idx % progress_every == 0:  # progress.need_report():
-           progress_cb(api, task_id, progress)
+            progress_cb(api, task_id, progress)
 
     progress_cb(api, task_id, progress)
 
@@ -192,8 +230,8 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
     # debug visualization
     # sly.image.write(os.path.join(cache_dir, "__res_img.png"), res_image)
-    #res_ann.draw(res_image)
-    #sly.image.write(os.path.join(cache_dir, "__res_ann.png"), res_image)
+    # res_ann.draw(res_image)
+    # sly.image.write(os.path.join(cache_dir, "__res_ann.png"), res_image)
 
     res_meta, res_ann = rasterize.convert_to_nonoverlapping(res_meta, res_ann)
 
@@ -202,7 +240,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
 def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
     sec_h, sec_w = bitmap._data.shape
-    crop = cover_img[y:y + sec_h, x:x + sec_w].copy()
+    crop = cover_img[y : y + sec_h, x : x + sec_w].copy()
 
     before_values, before_counts = np.unique(crop, return_counts=True)
     difference = {}
