@@ -99,9 +99,9 @@ def synthesize(
     aug.init_fg_augs(augs)
     visibility_threshold = augs["objects"].get("visibility", 0.8)
     classes = state["selectedClasses"]
-    bg_image = random.choice(bg_images)
+    bg_info = random.choice(bg_images)
     sly.logger.info("Download background")
-    bg = api.image.download_np(bg_image.id)
+    bg = api.image.download_np(bg_info.id)
     sly.logger.debug(f"BG shape: {bg.shape}")
 
     res_labels = []
@@ -117,16 +117,17 @@ def synthesize(
             res_classes.append(original_class)
         count_range = augs["objects"]["count"]
         count = random.randint(*count_range)
-        to_generate.extend(class_name for _ in range(count))
+        for i in range(count):
+            to_generate.append(class_name)
     random.shuffle(to_generate)
     res_classes = convert_res_classes_to_bitmap(res_classes)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
     progress_every = max(10, len(to_generate) // 20)
-    cover_img = np.zeros(res_image.shape[:2], np.int32)
+    cover_img = np.zeros(res_image.shape[:2], np.int32) # size is (h, w)
     objects_area = defaultdict(lambda: defaultdict(float))
-    cached_images = {}
+    cached_images = {} # generate objects
     for idx, class_name in enumerate(to_generate, start=1):
         if class_name not in labels:
             progress.iter_done_report()
@@ -140,13 +141,18 @@ def synthesize(
             source_image = _get_image_using_cache(api, cache_dir, image_id, image_info)
             cached_images[image_id] = source_image
         label_img, label_mask = get_label_foreground(source_image, label)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_label_img.png"), label_img)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_label_mask.png"), label_mask)
         label_img, label_mask = aug.apply_to_foreground(label_img, label_mask)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_img.png"), label_img)
+        # sly.image.write(os.path.join(cache_dir, f"{index}_aug_label_mask.png"), label_mask)
         label_img, label_mask = aug.resize_foreground_to_fit_into_image(
             res_image, label_img, label_mask
         )
 
+        # label_area = label.geometry.area
         find_place = False
-        for _ in range(3):
+        for attempt in range(3):
             origin = aug.find_origin(res_image.shape, label_mask.shape)
             geometry = sly.Bitmap(
                 label_mask[:, :, 0].astype(bool),
@@ -161,6 +167,8 @@ def synthesize(
                 new_area = objects_area[object_idx]["current"] - diff
                 visibility_portion = new_area / objects_area[object_idx]["original"]
                 if visibility_portion < visibility_threshold:
+                    # sly.logger.warn(f"Object '{idx}', attempt {attempt + 1}: "
+                    #                 f"visible portion ({visibility_portion}) < threshold ({visibility_threshold})")
                     allow_placement = False
                     break
             if allow_placement is True:
@@ -192,8 +200,12 @@ def synthesize(
             progress_cb(api, task_id, progress)
     progress_cb(api, task_id, progress)
     res_ann = sly.Annotation(img_size=bg.shape[:2], labels=res_labels)
+    # debug visualization
+    # sly.image.write(os.path.join(cache_dir, "__res_img.png"), res_image)
+    # res_ann.draw(res_image)
+    # sly.image.write(os.path.join(cache_dir, "__res_ann.png"), res_image)
     res_meta, res_ann = rasterize.convert_to_nonoverlapping(res_meta, res_ann)
-    return res_image, bg_image, res_ann, res_meta
+    return res_image, bg_info, res_ann, res_meta
 
 
 def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
@@ -225,15 +237,22 @@ def convert_res_classes_to_bitmap(res_classes):
 
 
 def merge_bg_img_metas(img_proj_meta: sly.ProjectMeta, bg_proj_meta: sly.ProjectMeta):
+    img_proj_metga_obj_classes_names = [obj_class.name for obj_class in img_proj_meta.obj_classes]
     new_bg_classes = []
     for bg_class in bg_proj_meta.obj_classes:
-        bg_class = bg_class.clone(name=f"{bg_class.name}-background")
-        if bg_class in img_proj_meta.obj_classes:
-            continue
+        bg_class: sly.ObjClass
+        if f"{bg_class.name}-mask" in img_proj_metga_obj_classes_names:
+            bg_class = bg_class.clone(name=f"{bg_class.name}-mask", geometry_type=sly.Bitmap)
+        elif f"{bg_class.name}-bbox" in img_proj_metga_obj_classes_names:
+            bg_class = bg_class.clone(name=f"{bg_class.name}-bbox", geometry_type=sly.Rectangle)
         else:
-            new_bg_classes.append(bg_class)
+            bg_class = bg_class.clone(name=f"{bg_class.name}-background")
+        new_bg_classes.append(bg_class)
+
     if new_bg_classes:
-        img_proj_meta = img_proj_meta.add_obj_classes(new_bg_classes)
+        for bg_class in new_bg_classes:
+            if bg_class not in img_proj_meta.obj_classes:
+                img_proj_meta = img_proj_meta.add_obj_class(bg_class)
     return img_proj_meta
 
 
@@ -241,5 +260,12 @@ def merge_bg_img_ann(img_ann: sly.Annotation, bg_ann: sly.Annotation, merged_met
     new_labels = []
     for label in bg_ann.labels:
         obj_class = merged_meta.get_obj_class(f"{label.obj_class.name}-background")
+        if obj_class is None:
+            obj_class = merged_meta.get_obj_class(f"{label.obj_class.name}-mask")
+        if obj_class is None:
+            obj_class = merged_meta.get_obj_class(f"{label.obj_class.name}-bbox")
+        if obj_class is None:
+            continue
+        label = label.convert(obj_class)[0]
         new_labels.append(label.clone(obj_class=obj_class, tags=label.tags))
     return img_ann.add_labels(labels=new_labels).add_tags(tags=bg_ann.img_tags)

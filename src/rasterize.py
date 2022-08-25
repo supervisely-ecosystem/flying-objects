@@ -2,12 +2,16 @@ import numpy as np
 import supervisely as sly
 
 
-def need_convert(label_geometry_type) -> bool:
-    return label_geometry_type in [sly.Polygon, sly.Rectangle, sly.Bitmap, sly.AnyGeometry]
+def need_convert(geometry_type) -> bool:
+    if geometry_type in [sly.Polygon, sly.Rectangle, sly.Bitmap, sly.AnyGeometry]:
+        return True
+    return False
 
 
 def allow_render_for_any_shape(lbl: sly.Label):
-    return lbl.obj_class.geometry_type != sly.AnyGeometry or need_convert(type(lbl.geometry)) is not False
+    if lbl.obj_class.geometry_type == sly.AnyGeometry and need_convert(type(lbl.geometry)) is False:
+        return False
+    return True
 
 
 def convert_to_nonoverlapping(
