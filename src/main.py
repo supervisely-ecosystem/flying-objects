@@ -3,15 +3,22 @@ from collections import defaultdict
 import supervisely as sly
 from supervisely.app.v1.app_service import AppService
 
-from init_ui import init_input_project, init_classes_stats, init_augs, init_progress, init_res_project, refresh_progress_images
+from init_ui import (
+    init_input_project,
+    init_classes_stats,
+    init_augs,
+    init_progress,
+    init_res_project,
+    refresh_progress_images,
+)
 from generate import update_bg_images, synthesize
 from postprocess import postprocess, highlight_instances
 
 app: AppService = AppService()
 
-team_id = int(os.environ['context.teamId'])
-workspace_id = int(os.environ['context.workspaceId'])
-project_id = int(os.environ['modal.state.slyProjectId'])
+team_id = int(os.environ["context.teamId"])
+workspace_id = int(os.environ["context.workspaceId"])
+project_id = int(os.environ["modal.state.slyProjectId"])
 
 project_info = app.public_api.project.get_info_by_id(project_id)
 if project_info is None:
@@ -31,19 +38,16 @@ empty_gallery = {
     "content": {
         "projectMeta": sly.ProjectMeta().to_json(),
         "annotations": {},
-        "layout": [[] for i in range(CNT_GRID_COLUMNS)]
+        "layout": [[] for i in range(CNT_GRID_COLUMNS)],
     },
-    "previewOptions": {
-        "enableZoom": True,
-        "resizeOnZoom": True
-    },
+    "previewOptions": {"enableZoom": True, "resizeOnZoom": True},
     "options": {
         "enableZoom": False,
         "syncViews": False,
         "showPreview": True,
         "selectable": False,
-        "opacity": 0.5
-    }
+        "opacity": 0.5,
+    },
 }
 
 
@@ -91,7 +95,9 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         cache_dir = os.path.join(app.data_dir, "cache_images_preview")
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
-        img, ann, res_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir)
+        img, ann, res_meta = synthesize(
+            api, task_id, state, meta, images_info, labels, bg_images, cache_dir
+        )
         res_meta, ann = postprocess(state, ann, res_meta, sly.ProjectMeta())
         if state["taskType"] == "inst-seg" and state["highlightInstances"] is True:
             res_meta, ann = highlight_instances(res_meta, ann)
@@ -109,7 +115,7 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         gallery["content"]["annotations"] = {
             "preview": {
                 "url": file_info.storage_path,
-                "figures": [label.to_json() for label in ann.labels]
+                "figures": [label.to_json() for label in ann.labels],
             }
         }
         gallery["content"]["layout"] = [["preview"]]
@@ -137,7 +143,9 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
             res_project_name = state["resProjectName"]
             if res_project_name == "":
                 res_project_name = "synthetic"
-            res_project = api.project.create(workspace_id, res_project_name, change_name_if_conflict=True)
+            res_project = api.project.create(
+                workspace_id, res_project_name, change_name_if_conflict=True
+            )
         elif state["destProject"] == "existingProject":
             res_project = api.project.get_info_by_id(state["destProjectId"])
 
@@ -147,12 +155,24 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         progress = sly.Progress("Generating images", state["imagesCount"])
         refresh_progress_images(api, task_id, progress)
         for i in range(state["imagesCount"]):
-            img, ann, cur_meta = synthesize(api, task_id, state, meta, images_info, labels, bg_images, cache_dir, preview=False)
+            img, ann, cur_meta = synthesize(
+                api,
+                task_id,
+                state,
+                meta,
+                images_info,
+                labels,
+                bg_images,
+                cache_dir,
+                preview=False,
+            )
             merged_meta, new_ann = postprocess(state, ann, cur_meta, res_meta)
             if res_meta != merged_meta:
                 api.project.update_meta(res_project.id, merged_meta.to_json())
                 res_meta = merged_meta
-            image_info = api.image.upload_np(res_dataset.id, f"{i + res_dataset.items_count}.png", img)
+            image_info = api.image.upload_np(
+                res_dataset.id, f"{i + res_dataset.items_count}.png", img
+            )
             api.annotation.upload_ann(image_info.id, new_ann)
             progress.iter_done_report()
             if progress.need_report():
@@ -163,10 +183,13 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
         {"field": "data.started", "payload": False},
         {"field": "data.resProjectId", "payload": res_project.id},
         {"field": "data.resProjectName", "payload": res_project.name},
-        {"field": "data.resProjectPreviewUrl", "payload": api.image.preview_url(res_project.reference_image_url, 100, 100)},
+        {
+            "field": "data.resProjectPreviewUrl",
+            "payload": api.image.preview_url(res_project.reference_image_url, 100, 100),
+        },
     ]
     api.task.set_fields(task_id, fields)
-    #app.stop()
+    # app.stop()
 
 
 def main():
@@ -179,14 +202,14 @@ def main():
     state["tabName"] = "Backgrounds"
     state["teamId"] = team_id
     state["workspaceId"] = workspace_id
-    state["bgProjectId"] = None # project_id
+    state["bgProjectId"] = None  # project_id
     state["bgDatasets"] = []
     state["allDatasets"] = True
 
-    #classes tab
+    # classes tab
     init_classes_stats(app.public_api, data, state, project_info, meta)
 
-    #augmentations tab
+    # augmentations tab
     init_augs(state)
     state["taskType"] = "inst-seg"
     state["highlightInstances"] = False
@@ -203,13 +226,13 @@ def main():
     state["resProjectName"] = f"synthetic_{project_info.name}"
     state["imagesCount"] = 10
 
-    #@TODO: ONLY for debug
+    # @TODO: ONLY for debug
     # state["bgProjectId"] = project_id
     # state["bgDatasets"] = ["01_background"]
     # state["allDatasets"] = True
     # state["tabName"] = "Classes"
 
-    #@TODO: ONLY for debug
+    # @TODO: ONLY for debug
     # state["bgProjectId"] = 2068
     # state["bgDatasets"] = []
     # state["allDatasets"] = True
@@ -218,10 +241,10 @@ def main():
     app.run(data=data, state=state, initial_events=[{"command": "cache_annotations"}])
 
 
-#@TODO: ElasticTransformation
-#@TODO: keep foreground w%/h% on background image
-#@TODO: handle invalid augementations from user (validate augmentations)
-#@TODO: check sum of objects for selected classes - disable buttons
-#@TODO: output resolution
+# @TODO: ElasticTransformation
+# @TODO: keep foreground w%/h% on background image
+# @TODO: handle invalid augementations from user (validate augmentations)
+# @TODO: check sum of objects for selected classes - disable buttons
+# @TODO: output resolution
 if __name__ == "__main__":
     sly.main_wrapper("main", main)
