@@ -29,6 +29,14 @@
                         :options="{'multiple': true}">
                 </sly-select-dataset>
 
+                <sly-field title="Labels on background images"
+                           description="">
+                    <el-select v-model="state.backgroundLabels">
+                        <el-option key="ignore" label="ignore labels" value="ignore"></el-option>
+                        <el-option key="smartMerge" label="merge with synthetic labels" value="smartMerge"></el-option>
+                    </el-select>
+                </sly-field>
+
             </el-tab-pane>
             <el-tab-pane label="2. Classes" name="Classes">
                 <div v-if="data.classes.length === 0">Project does not have any classes</div>
