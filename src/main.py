@@ -108,6 +108,8 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
 
         res_dataset = api.dataset.get_or_create(res_project.id, state["resDatasetName"])
         res_meta = sly.ProjectMeta.from_json(api.project.get_meta(res_project.id))
+        if state["backgroundLabels"] == "smartMerge":
+            g.bg_meta = sly.ProjectMeta.from_json(api.project.get_meta(state["bgProjectId"]))
 
         progress = sly.Progress("Generating images", state["imagesCount"])
         refresh_progress_images(api, task_id, progress)

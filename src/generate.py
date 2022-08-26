@@ -105,22 +105,19 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
     if state["backgroundLabels"] == "smartMerge":
-            g.bg_meta = sly.ProjectMeta.from_json(api.project.get_meta(state["bgProjectId"]))
             bg_ann = sly.Annotation.from_json(data=api.annotation.download_json(bg_info.id), project_meta=g.bg_meta)
             for bg_label in bg_ann.labels:
                 obj_class = res_meta.get_obj_class(bg_label.obj_class.name)
                 if obj_class is None:
                     # ignore bg_label, class not selected in FG project
                     continue
-                if type(bg_label.geometry) == sly.Bitmap:
+                if isinstance(bg_label.geometry, sly.Bitmap):
                     res_labels.append(bg_label.clone(obj_class=obj_class))
                     continue
-                if type(bg_label.geometry) == sly.Polygon:
-                    res_labels.extend(bg_label.convert(obj_class))
+                if isinstance(bg_label.geometry, sly.Polygon):
+                    res_labels.extend(bg_label.convert(new_obj_class=obj_class))
                     continue
-                if type(bg_label.geometry) == sly.Rectangle:
-                    res_labels.extend(bg_label.convert(obj_class))
-                    continue
+
 
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
