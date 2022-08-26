@@ -20,7 +20,16 @@
 
 # Overview
 
-App generates synthetic data for detection / segmentation / instance segmentation tasks. It copies labeled objects (foregrounds), applies augmentations and pastes them to background images.
+App generates synthetic data for detection / segmentation / instance segmentation tasks.
+It copies labeled objects (foregrounds), applies augmentations and pastes them to background images. It is highly recommended for foreground objects to be of shapes polygon or mask. Only these shapes allows to validate the quality and correctness of synthetic labels - objects overlapping and visibility thresholds. 
+
+App also has an option to copy objects from the selected background project as a foreground objects, 
+copying applies only for selected classes that are present in both foreground and background projects and have similar shapes (polygon or mask), 
+e.g: foreground class: lemon (polygon or mask), and background class: lemon (polygon or mask). Labels on background images of other shapes will be ignored because they are not guarantee the correctness of synthetic results. 
+
+For example, if object on background image is labeled with bounding box and we copy-paste random foreground object on top of it then it will be impossible to validate background object visibility. If background object became invisible, its label have to be removed from results to make sure that resulting training data is 100% accurate. But for shapes like bounding box it is impossible to do. That is the reason why original labels on both foregrounds and backgrounds have to be polygons or masks.
+
+
 
 # How To Use
 

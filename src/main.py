@@ -3,7 +3,7 @@ import os
 import supervisely as sly
 
 import globals as g
-from generate import synthesize, update_bg_images, merge_bg_img_metas, merge_bg_img_ann
+from generate import synthesize, update_bg_images
 from init_ui import (init_augs, init_classes_stats, init_input_project,
                      init_progress, init_res_project, refresh_progress_images)
 from postprocess import highlight_instances, postprocess
@@ -46,6 +46,8 @@ def deselect_all_classes(api: sly.Api, task_id, context, state, app_logger):
 @sly.timeit
 def preview(api: sly.Api, task_id, context, state, app_logger):
     bg_images = update_bg_images(api, state)
+    if state["backgroundLabels"] == "smartMerge":
+        g.bg_meta = sly.ProjectMeta.from_json(api.project.get_meta(state["bgProjectId"]))
 
     if len(bg_images) == 0:
         sly.logger.warn("There are no background images")
@@ -53,7 +55,7 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         cache_dir = os.path.join(g.app.data_dir, "cache_images_preview")
         sly.fs.mkdir(cache_dir)
         sly.fs.clean_dir(cache_dir)
-        img, bg_img, ann, res_meta = synthesize(
+        img, ann, res_meta = synthesize(
             api, task_id, state, g.meta, g.images_info, g.labels, bg_images, cache_dir
         )
         res_meta, ann = postprocess(state, ann, res_meta, sly.ProjectMeta())
@@ -116,11 +118,13 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
 
         res_dataset = api.dataset.get_or_create(res_project.id, state["resDatasetName"])
         res_meta = sly.ProjectMeta.from_json(api.project.get_meta(res_project.id))
+        if state["backgroundLabels"] == "smartMerge":
+            g.bg_meta = sly.ProjectMeta.from_json(api.project.get_meta(state["bgProjectId"]))
 
         progress = sly.Progress("Generating images", state["imagesCount"])
         refresh_progress_images(api, task_id, progress)
         for i in range(state["imagesCount"]):
-            img, bg_img, ann, cur_meta = synthesize(
+            img, ann, cur_meta = synthesize(
                 api,
                 task_id,
                 state,
@@ -145,8 +149,6 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
             image_info = api.image.upload_np(
                 res_dataset.id, f"{i + res_dataset.items_count}.png", img
             )
-            if state["backgroundLabels"] == "merge":
-                new_ann = merge_bg_img_ann(new_ann, bg_ann, merged_meta)
             api.annotation.upload_ann(image_info.id, new_ann)
             progress.iter_done_report()
             if progress.need_report():
