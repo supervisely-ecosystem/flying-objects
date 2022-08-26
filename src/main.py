@@ -46,6 +46,8 @@ def deselect_all_classes(api: sly.Api, task_id, context, state, app_logger):
 @sly.timeit
 def preview(api: sly.Api, task_id, context, state, app_logger):
     bg_images = update_bg_images(api, state)
+    if state["backgroundLabels"] == "smartMerge":
+        g.bg_meta = sly.ProjectMeta.from_json(api.project.get_meta(state["bgProjectId"]))
 
     if len(bg_images) == 0:
         sly.logger.warn("There are no background images")
