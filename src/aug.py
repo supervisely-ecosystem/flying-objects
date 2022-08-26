@@ -1,10 +1,11 @@
-import cv2
 import random
-import imgaug.augmenters as iaa
-from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 from ast import literal_eval
-import supervisely as sly
+
 import albumentations as A
+import cv2
+import imgaug.augmenters as iaa
+import supervisely as sly
+from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 
 aug_color_fg = None
 aug_spacial_fg = None
@@ -30,14 +31,14 @@ name_func_spacial = {
     "Fliplr": iaa.Fliplr,
     "Flipud": iaa.Flipud,
     "Rotate": iaa.Rotate,
-    #"ElasticTransformation": iaa.ElasticTransformation,
+    # "ElasticTransformation": iaa.ElasticTransformation,
     "Resize": iaa.Resize,
 }
 
 
 def init_fg_augs(settings):
-    init_color_augs(settings['objects']['augs']['color'])
-    init_spacial_augs(settings['objects']['augs']['spacial'])
+    init_color_augs(settings["objects"]["augs"]["color"])
+    init_spacial_augs(settings["objects"]["augs"]["spacial"])
 
 
 def init_color_augs(data):
@@ -56,9 +57,9 @@ def init_spacial_augs(data):
     global aug_spacial_fg
     augs = []
     for key, value in data.items():
-        if key == 'ElasticTransformation':
-            alpha = literal_eval(value['alpha'])
-            sigma = literal_eval(value['sigma'])
+        if key == "ElasticTransformation":
+            alpha = literal_eval(value["alpha"])
+            sigma = literal_eval(value["sigma"])
             augs.append(iaa.ElasticTransformation(alpha=alpha, sigma=sigma))
             continue
         if key not in name_func_spacial:
@@ -69,7 +70,7 @@ def init_spacial_augs(data):
         if type(value) is str:
             parsed_value = literal_eval(value)
 
-        if key == 'Rotate':
+        if key == "Rotate":
             a = iaa.Rotate(rotate=parsed_value, fit_output=True)
         else:
             a = name_func_spacial[key](parsed_value)
@@ -79,12 +80,14 @@ def init_spacial_augs(data):
 
 def apply_to_foreground(image, mask):
     if image.shape[:2] != mask.shape[:2]:
-        raise ValueError(f"Image ({image.shape}) and mask ({mask.shape}) have different resolutions")
+        raise ValueError(
+            f"Image ({image.shape}) and mask ({mask.shape}) have different resolutions"
+        )
 
     # apply color augs
     augmented = aug_color_fg(image=image, mask=mask)
-    image_aug = augmented['image']
-    mask_aug = augmented['mask']
+    image_aug = augmented["image"]
+    mask_aug = augmented["mask"]
 
     # apply spacial augs
     segmap = SegmentationMapsOnImage(mask_aug, shape=mask_aug.shape)
@@ -110,15 +113,9 @@ def resize_foreground_to_fit_into_image(dest_image, image, mask):
 
     settings = None
     if mask_h > img_h:
-        settings = {
-            "height": img_h,
-            "width": "keep-aspect-ratio"
-        }
+        settings = {"height": img_h, "width": "keep-aspect-ratio"}
     if mask_w > img_w and mask_w / img_w > mask_h / img_h:
-        settings = {
-            "height": "keep-aspect-ratio",
-            "width": img_w
-        }
+        settings = {"height": "keep-aspect-ratio", "width": img_w}
 
     if settings is not None:
         aug = iaa.Resize(settings)
@@ -134,4 +131,7 @@ def place_fg_to_bg(fg, fg_mask, bg, x, y):
     sec_h, sec_w, _ = fg.shape
     secondary_object = cv2.bitwise_and(fg, fg_mask)
     secondary_bg = 255 - fg_mask
-    bg[y:y+sec_h, x:x+sec_w, :] = cv2.bitwise_and(bg[y:y+sec_h, x:x+sec_w, :], secondary_bg) + secondary_object
+    bg[y : y + sec_h, x : x + sec_w, :] = (
+        cv2.bitwise_and(bg[y : y + sec_h, x : x + sec_w, :], secondary_bg)
+        + secondary_object
+    )
