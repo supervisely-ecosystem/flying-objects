@@ -7,6 +7,7 @@ import supervisely_lib as sly
 
 import aug
 import rasterize
+import globals as g
 from init_ui import refresh_progress, refresh_progress_preview
 
 bg_project_id = None
@@ -103,6 +104,21 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
     random.shuffle(to_generate)
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
+    if state["backgroundLabels"] == "smartMerge":
+            bg_ann = sly.Annotation.from_json(data=api.annotation.download_json(bg_info.id), project_meta=g.bg_meta)
+            for bg_label in bg_ann.labels:
+                obj_class = res_meta.get_obj_class(bg_label.obj_class.name)
+                if obj_class is None:
+                    # ignore bg_label, class not selected in FG project
+                    continue
+                if isinstance(bg_label.geometry, sly.Bitmap):
+                    res_labels.append(bg_label.clone(obj_class=obj_class))
+                    continue
+                if isinstance(bg_label.geometry, sly.Polygon):
+                    res_labels.extend(bg_label.convert(new_obj_class=obj_class))
+                    continue
+
+
     progress = sly.Progress("Processing foregrounds", len(to_generate))
     progress_cb(api, task_id, progress)
 
@@ -142,8 +158,8 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
         find_place = False
         for attempt in range(3):
             origin = aug.find_origin(res_image.shape, label_mask.shape)
-            g = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
-            difference = count_visibility(cover_img, g, idx, origin[0], origin[1])
+            geometry = sly.Bitmap(label_mask[:, :, 0].astype(bool), origin=sly.PointLocation(row=origin[1], col=origin[0]))
+            difference = count_visibility(cover_img, geometry, idx, origin[0], origin[1])
 
             allow_placement = True
             for object_idx, diff in difference.items():
@@ -167,15 +183,15 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
 
         try:
             aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
-            g.draw(cover_img, color=idx)
+            geometry.draw(cover_img, color=idx)
 
             for object_idx, diff in difference.items():
                 objects_area[object_idx]['current'] -= diff
 
-            current_obj_area = g.area
+            current_obj_area = geometry.area
             objects_area[idx]['current'] = current_obj_area
             objects_area[idx]['original'] = current_obj_area
-            res_labels.append(sly.Label(g, res_meta.get_obj_class(class_name)))
+            res_labels.append(sly.Label(geometry, res_meta.get_obj_class(class_name)))
 
         except Exception as e:
             #sly.logger.warn(repr(e))

@@ -6,3 +6,4 @@ supervisely_lib
 src/__pycache__
 images/*
 /src/abc.png
+/src/debug
