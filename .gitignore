@@ -1,9 +1,5 @@
-/secret_debug.env
-.idea
-*.mp4
-venv
-supervisely_lib
-src/__pycache__
-images/*
-/src/abc.png
-/src/debug
+__pycache__
+.venv
+backup/
+.flake8
+.DS_Store

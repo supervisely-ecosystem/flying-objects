@@ -1,6 +1,7 @@
 {
   "name": "Flying objects",
   "type": "app",
+  "version": "2.0.0",
   "categories": [
     "neural network",
     "images",
@@ -11,21 +12,17 @@
     "synthetic",
     "data operations"
   ],
-  "description": "Generate synthetic data: flying foregrounds on top of backgrounds",
-  "docker_image": "supervisely/base-py-sdk:6.35.0",
-  "instance_version": "6.4.57",
-  "main_script": "src/main.py",
-  "gui_template": "src/gui.html",
+  "description": "Generate synthetic data: flying foregrounds on top of backgrounds.",
+  "docker_image": "supervisely/base-py-sdk:6.72.10",
+  "entrypoint": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
+  "port": 8000,
   "task_location": "workspace_tasks",
-  "isolate": true,
   "icon": "https://img.icons8.com/color/100/000000/snitch.png",
-  "icon_background": "#FFFFFF",
+  "icon_cover": true,
+  "headless": false,
   "context_menu": {
-    "target": [
-      "images_project"
-    ],
-    "context_category": "Synthetic data"
+    "context_category": "Synthetic data",
+    "target": ["images_project", "images_dataset", "ecosystem"]
   },
-  "poster": "https://user-images.githubusercontent.com/106374579/182824459-291c34dc-0a5a-4c97-a297-d1ed4143c58d.png",
-  "community_agent": false
+  "poster": "https://user-images.githubusercontent.com/106374579/182824459-291c34dc-0a5a-4c97-a297-d1ed4143c58d.png"
 }
