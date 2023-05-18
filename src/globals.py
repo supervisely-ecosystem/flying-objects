@@ -5,54 +5,102 @@ import supervisely as sly
 from dotenv import load_dotenv
 
 ABSOLUTE_PATH = os.path.dirname(__file__)
-TMP_DIR = os.path.join(ABSOLUTE_PATH, "tmp")
+AUGS_FILE = os.path.join(ABSOLUTE_PATH, "augs.yaml")
 
-# Directory where temporary downloaded images will be stored.
-IMAGES_DIR = os.path.join(TMP_DIR, "images")
+# Local path to the .env file, if the app is started from the team files.
+ENV_FILE = "assets.env"
 
-# Path to the .env file, if the app is started from the team files.
-ENV_FILE = os.path.join(ABSOLUTE_PATH, "assets.env")
-
-STATIC_DIR = os.path.join(ABSOLUTE_PATH, "static")
-
-os.makedirs(IMAGES_DIR, exist_ok=True)
-os.makedirs(STATIC_DIR, exist_ok=True)
+ASSETS_ADDRESS = "https://assets.supervise.ly/"
+ASSETS_TEAM = "primitives"
 
 load_dotenv("local.env")
 load_dotenv(os.path.expanduser("~/supervisely.env"))
 api: sly.Api = sly.Api.from_env()
 
-TEAM_ID = sly.io.env.team_id()
+SLY_APP_DATA_DIR = sly.app.get_data_dir()
+STATIC_DIR = os.path.join(SLY_APP_DATA_DIR, "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
 
-# Default settings for uploading primitives to Assets.
-DEFAULT_TEAM_NAME = "primitives"
-DEFAULT_TAG_NAME = "inference"
-DEFAULT_ANNOTATION_TYPES = ["bitmap"]
+LABEL_MODES = {
+    "Ignore labels": "ignore",
+    "Merge with syntehtic labels": "merge",
+}
 
-# Path to the JSON file which is generated after comparsion of the teams is finished.
-DIFFERENCES_JSON = os.path.join(TMP_DIR, "team_differences.json")
+TASK_TYPES = {
+    "Segmentation": "segmentation",
+    "Detection": "detection",
+    "Instance segmentation": "instance_segmentation",
+}
 
-BATCH_SIZE = 100
-GEOMETRIES = ["bitmap", "polygon", "polyline", "rectangle"]
+TASK_TOOLTIPS = {
+    "segmentation": "All objects of same class on image will be merged to a single mask.",
+    "detection": "Masks will be transformed to bounding boxes.",
+    "instance_segmentation": "Separate mask for every object.",
+}
 
 
 class State:
-    """Class for storing global variables across the app in one place."""
+    class Settings:
+        def __init__(self):
+            self.background_project_id = None
+            self.use_all_datasets = None
+            self.background_dataset_id = None
+            self.label_mode = None
+
+            self.selected_classes = None
+            self.augmentations = None
+
+            self.task_type = None
+
+            self.random_colors = None
+
+    class Assets:
+        def __init__(self):
+            self.data = {}
+            self.checkboxes = {}
 
     def __init__(self):
+        self.SETTINGS = self.Settings()
+        self.ASSETS = self.Assets()
+
         self.selected_team = sly.io.env.team_id()
         self.selected_workspace = sly.io.env.workspace_id()
         self.selected_project = sly.io.env.project_id(raise_not_found=False)
-        self.selected_dataset = sly.io.env.dataset_id(raise_not_found=False)
+        self.project_meta = None
 
-        # Address of the target instance.
-        self.assets_team_name = None
-        self.instance = None
         self.assets_api_key = None
         # API object for the target instance, icludes API key and instance address.
         self.assets_api = None
         # If the app was SUCCESSFULLY launched from the TeamFiles.
         self.from_team_files = False
+
+        self.augs = None
+        self.read_augs()
+
+    def get_project_meta(self):
+        sly.logger.debug(
+            f"Trying to get project meta for project ID: {self.selected_project}."
+        )
+
+        project_meta_json = api.project.get_meta(self.selected_project)
+        self.project_meta = sly.ProjectMeta.from_json(project_meta_json)
+
+        sly.logger.info(
+            "Project meta was loaded from project and saved in the global state."
+        )
+
+    def read_augs(self):
+        with open(AUGS_FILE, "r") as f:
+            self.augs = f.read()
+
+        sly.logger.info(f"Augmentations were loaded from the file: {AUGS_FILE}.")
+
+    def save_augs(self, augs):
+        with open(AUGS_FILE, "w") as f:
+            f.write(augs)
+
+        sly.logger.info(f"Augmentations were saved to the file: {AUGS_FILE}.")
+        self.read_augs()
 
 
 STATE = State()
@@ -63,13 +111,12 @@ def key_from_file():
     try:
         # Get target.env from the team files.
         INPUT_FILE = sly.env.file(True)
-        api.file.download(TEAM_ID, INPUT_FILE, ENV_FILE)
+        api.file.download(STATE.selected_team, INPUT_FILE, ENV_FILE)
         sly.logger.info(f"Target API key file was downloaded to {ENV_FILE}.")
 
         # Read Target API key from the file.
         load_dotenv(ENV_FILE)
-        STATE.assets_api_key = os.environ["TARGET_API_TOKEN"]
-        STATE.instance = os.environ["TARGET_SERVER_ADDRESS"]
+        STATE.assets_api_key = os.environ["ASSETS_API_TOKEN"]
 
         sly.logger.info("Target API key and instance were loaded from the team files.")
     except Exception:

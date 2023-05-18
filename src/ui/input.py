@@ -1,126 +1,125 @@
 import os
+import requests
 
 import supervisely as sly
 from supervisely.app.widgets import (
     Card,
-    SelectDataset,
+    SelectProject,
     Button,
     Container,
-    DatasetThumbnail,
+    ProjectThumbnail,
     Text,
-    Checkbox,
+    Tabs,
+    Input,
+    Flexbox,
     Field,
+    Collapse,
+    Checkbox,
 )
 
 import src.globals as g
-import src.ui.keys as keys
+import src.ui.settings as settings
 
-dataset_thumbnail = DatasetThumbnail()
-dataset_thumbnail.hide()
+select_project = SelectProject(workspace_id=g.STATE.selected_workspace)
+
+project_thumbnail = ProjectThumbnail()
+project_thumbnail.hide()
 
 load_button = Button("Load data")
-change_dataset_button = Button("Change dataset", icon="zmdi zmdi-lock-open")
-change_dataset_button.hide()
+change_project_button = Button("Change project", icon="zmdi zmdi-lock-open")
+change_project_button.hide()
 
-no_dataset_message = Text(
-    "Please, select a dataset before clicking the button.",
+no_project_message = Text(
+    "Please, select a project before clicking the button.",
     status="warning",
 )
-no_dataset_message.hide()
+no_project_message.hide()
 
-if g.STATE.selected_dataset and g.STATE.selected_project:
-    # If the app was loaded from a dataset.
-    sly.logger.debug("App was loaded from a dataset.")
-
-    # Stting values to the widgets from environment variables.
-    select_dataset = SelectDataset(
-        default_id=g.STATE.selected_dataset, project_id=g.STATE.selected_project
-    )
-
-    # Hiding unnecessary widgets.
-    select_dataset.hide()
-    load_button.hide()
-
-    # Creating a dataset thumbnail to show.
-    dataset_thumbnail.set(
-        g.api.project.get_info_by_id(g.STATE.selected_project),
-        g.api.dataset.get_info_by_id(g.STATE.selected_dataset),
-    )
-    dataset_thumbnail.show()
-
-elif g.STATE.selected_project:
-    # If the app was loaded from a project: showing the dataset selector in compact mode.
-    sly.logger.debug("App was loaded from a project.")
-
-    select_dataset = SelectDataset(
-        project_id=g.STATE.selected_project, compact=True, show_label=False
-    )
-else:
-    # If the app was loaded from ecosystem: showing the dataset selector in full mode.
-    sly.logger.debug("App was loaded from ecosystem.")
-
-    select_dataset = SelectDataset()
-
-connect_to_assets_checkbox = Checkbox("Connect to Assets")
-connect_to_assets_field = Field(
-    content=connect_to_assets_checkbox,
-    title="Use primitives from Assets",
-    description="Connect to Assets API using the API key to use the primitives in the app.",
+# Input widget for the API key, characters will be hidden.
+key_input = Input(type="password")
+key_field = Field(
+    key_input, "API key", "Enter API key for Assets and check the connection."
 )
+
+# Flexbox for all buttons.
+check_key_button = Button("Check connection")
+change_key_button = Button("Change key", icon="zmdi zmdi-swap-vertical-circle")
+change_key_button.hide()
+buttons_flexbox = Flexbox([check_key_button, change_key_button])
+
+# Message which is shown if the API key was loaded from the team files.
+file_loaded_info = Text(
+    text="The API key was loaded from the team files.", status="info"
+)
+file_loaded_info.hide()
+
+# Message which is shown after the connection check.
+check_result = Text()
+check_result.hide()
+
+assets_tab_container = Container(
+    [key_field, buttons_flexbox, file_loaded_info, check_result]
+)
+
+project_tab_container = Container(
+    [
+        select_project,
+        load_button,
+        change_project_button,
+        project_thumbnail,
+        no_project_message,
+    ]
+)
+
+input_tabs = Tabs(["Project", "Assets"], [project_tab_container, assets_tab_container])
 
 # Input card with all widgets.
 card = Card(
-    "1️⃣ Input dataset",
-    "Images from the selected dataset will be loaded.",
-    content=Container(
-        widgets=[
-            dataset_thumbnail,
-            select_dataset,
-            load_button,
-            change_dataset_button,
-            connect_to_assets_field,
-            no_dataset_message,
-        ]
-    ),
+    "1️⃣ Input data",
+    "Select to load images from an existing project or from the assets primitives.",
+    content=input_tabs,
     collapsable=True,
 )
 
 
 @load_button.click
-def load_dataset():
-    """Handles the load button click event. Reading values from the SelectDataset widget,
+def load_project():
+    """Handles the load button click event. Reading values from the SelectProject widget,
     calling the API to get project, workspace and team ids (if they're not set),
     building the table with images and unlocking the rotator and output cards.
     """
-    # Reading the dataset id from SelectDataset widget.
-    dataset_id = select_dataset.get_selected_id()
 
-    if not dataset_id:
-        # If the dataset id is empty, showing the warning message.
-        no_dataset_message.show()
-        return
+    if g.STATE.selected_project:
+        project_id = g.STATE.selected_project
+        select_project.hide()
+        change_project_button.hide()
 
-    # Hide the warning message if dataset was selected.
-    no_dataset_message.hide()
+        sly.logger.info(f"The app was launched from the project with ID: {project_id}.")
+    else:
+        # Reading the project id from SelectProject widget.
+        project_id = select_project.get_selected_id()
 
-    # Changing the values of the global variables to access them from other modules.
-    g.STATE.selected_dataset = dataset_id
+        if not project_id:
+            # If the project id is empty, showing the warning message.
+            no_project_message.show()
+            return
 
-    # Cleaning the static directory when the new dataset is selected.
+        # Changing the values of the global variables to access them from other modules.
+        g.STATE.selected_project = project_id
+        change_project_button.show()
+
+    no_project_message.hide()
+
+    # Cleaning the static directory when the new project is selected.
     clean_static_dir()
 
-    # Disabling the dataset selector and the load button.
-    select_dataset.disable()
+    select_project.disable()
     load_button.hide()
 
-    # Showing the lock checkbox for unlocking the dataset selector and button.
-    change_dataset_button.show()
-
     sly.logger.debug(
-        f"Calling API with dataset ID {dataset_id} to get project, workspace and team IDs."
+        f"Calling API with Project ID {project_id} to get workspace and team IDs."
     )
 
-    g.STATE.selected_project = g.api.dataset.get_info_by_id(dataset_id).project_id
     g.STATE.selected_workspace = g.api.project.get_info_by_id(
         g.STATE.selected_project
     ).workspace_id
@@ -132,12 +131,59 @@ def load_dataset():
         f"Recived IDs from the API. Selected team: {g.STATE.selected_team}, "
         f"selected workspace: {g.STATE.selected_workspace}, selected project: {g.STATE.selected_project}"
     )
+    project_info = g.api.project.get_info_by_id(g.STATE.selected_project)
 
-    dataset_thumbnail.set(
-        g.api.project.get_info_by_id(g.STATE.selected_project),
-        g.api.dataset.get_info_by_id(g.STATE.selected_dataset),
+    print(project_info)
+
+    project_thumbnail.set(project_info)
+    project_thumbnail.show()
+
+    input_tabs.disable()
+    g.STATE.get_project_meta()
+
+    load_data()
+
+
+def load_data():
+    sly.logger.debug("Starting to prepare the data for the app.")
+
+    if g.STATE.assets_api:
+        sly.logger.info(
+            "The app is working with the Assets primitives with provided API key."
+        )
+
+        read_assets()
+        settings.load_assets()
+
+    else:
+        sly.logger.info("The app is working with the Supervisely project.")
+
+        settings.classes_table.read_meta(g.STATE.project_meta)
+        settings.classes_table.show()
+
+    settings.card.unlock()
+    settings.card.uncollapse()
+    card.collapse()
+
+
+def read_assets():
+    sly.logger.debug("Trying to read the Assets primitives data from API.")
+
+    team_info = g.STATE.assets_api.team.get_info_by_name(g.ASSETS_TEAM)
+    workspaces = g.STATE.assets_api.workspace.get_list(team_info.id)
+
+    sly.logger.info(
+        f"Succesfully read {len(workspaces)} workspaces in {team_info.name}."
     )
-    dataset_thumbnail.show()
+
+    for workspace in workspaces:
+        g.STATE.ASSETS.data[workspace.name] = g.STATE.assets_api.project.get_list(
+            workspace.id
+        )
+
+    sly.logger.info(
+        "Successfully read all projects from Assets primitives and saved them in global state."
+    )
 
 
 def clean_static_dir():
@@ -152,21 +198,88 @@ def clean_static_dir():
         os.remove(os.path.join(g.STATIC_DIR, static_file))
 
 
-@change_dataset_button.click
+@change_project_button.click
 def handle_input():
-    """Handles the change dataset button click event. Enabling the dataset selector
-    and the load button, hiding the change dataset button.
+    """Handles the change project button click event. Enabling the project selector
+    and the load button, hiding the change project button.
     """
-    select_dataset.enable()
+    select_project.enable()
     load_button.show()
-    change_dataset_button.hide()
+    change_project_button.hide()
+    input_tabs.enable()
+    project_thumbnail.hide()
+    g.STATE.selected_project = None
 
 
-@connect_to_assets_checkbox.value_changed
-def assets_card_handler(show):
-    if show:
-        keys.card.show()
-        keys.card.uncollapse()
+@check_key_button.click
+def connect_to_assets():
+    """Checks the connection to the assets instance with specified API key."""
+    check_result.hide()
+
+    if not g.STATE.assets_api_key:
+        # Reading the API key from the input widget, if it was not loaded from the team files.
+        g.STATE.assets_api_key = key_input.get_value()
+
+    try:
+        g.STATE.assets_api = sly.Api(
+            server_address=g.ASSETS_ADDRESS,
+            token=g.STATE.assets_api_key,
+            ignore_task_id=True,
+        )
+
+        g.STATE.assets_api.team.get_free_name("test")
+        sly.logger.info("The connection to the Assets API was successful.")
+
+    except (ValueError, requests.exceptions.HTTPError):
+        g.STATE.assets_api_key = None
+        g.STATE.assets_api = None
+        sly.logger.warning("The connection to the Assets API failed.")
+        check_result.text = "The connection to the Assets API failed, check the key."
+        check_result.status = "error"
+        check_result.show()
+        return
+
+    if g.STATE.from_team_files:
+        # If the app was started from the team files, making changes in the GUI state.
+        key_input.set_value(g.STATE.assets_api_key)
+        change_key_button.hide()
+        key_input.disable()
+
+        input_tabs.set_active_tab("Assets")
+
     else:
-        keys.card.hide()
-        keys.card.collapse()
+        change_key_button.show()
+
+    input_tabs.disable()
+
+    check_result.text = f"Successfully connected to: {g.ASSETS_ADDRESS}"
+    check_result.status = "success"
+    check_result.show()
+
+    # Disabling fields for entering API key if the connection was successful.
+    key_input.disable()
+    check_key_button.hide()
+
+    load_data()
+
+
+@change_key_button.click
+def change_key():
+    """Handles the change instance button click event."""
+    key_input.enable()
+
+    input_tabs.enable()
+
+    check_key_button.show()
+    change_key_button.hide()
+
+
+g.key_from_file()
+# Trying to load the API key and instance address from the team files.
+if g.STATE.assets_api_key:
+    g.STATE.from_team_files = True
+    connect_to_assets()
+    file_loaded_info.show()
+
+if g.STATE.selected_project:
+    load_project()

@@ -2,7 +2,6 @@
   "python.defaultInterpreterPath": ".venv/bin/python",
   "files.exclude": {
     "**/__pycache__": true,
-    ".venv": true
   },
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
