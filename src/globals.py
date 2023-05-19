@@ -80,6 +80,8 @@ class State:
         self.augs = None
         self.read_augs()
 
+        self.continue_generation = True
+
     def get_project_meta(self):
         sly.logger.debug(
             f"Trying to get project meta for project ID: {self.selected_project}."

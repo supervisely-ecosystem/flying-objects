@@ -22,6 +22,8 @@ from supervisely.app.widgets import (
 )
 
 import src.globals as g
+import src.ui.preview as preview
+import src.ui.output as output
 
 select_project = SelectProject(workspace_id=g.STATE.selected_workspace)
 use_all_datasets_checkbox = Checkbox("Use all datasets", checked=True)
@@ -194,6 +196,14 @@ def save_settings():
     for widget in widgets:
         widget.disable()
 
+    preview.card.unlock()
+    preview.card.uncollapse()
+    output.card.unlock()
+    output.card.uncollapse()
+
+    card.lock()
+    card.collapse()
+
 
 @change_settings_button.click
 def change_settings():
@@ -206,6 +216,11 @@ def change_settings():
 
     for widget in widgets:
         widget.enable()
+
+    preview.card.lock()
+    preview.card.collapse()
+    output.card.lock()
+    output.card.collapse()
 
 
 def load_assets():

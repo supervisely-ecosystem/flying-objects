@@ -13,8 +13,6 @@ from supervisely.app.widgets import (
     Input,
     Flexbox,
     Field,
-    Collapse,
-    Checkbox,
 )
 
 import src.globals as g
