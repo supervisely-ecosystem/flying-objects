@@ -1,5 +1,7 @@
 import supervisely as sly
 
+import yaml
+
 from collections import defaultdict
 
 from supervisely.app.widgets import (
@@ -152,14 +154,18 @@ def save_settings():
     if not background_project_id:
         error_text.text = "Project with backgrounds is not selected."
         error_text.show()
+        settings_tabs.set_active_tab("Backgrounds")
         return
 
+    g.STATE.SETTINGS.background_project_id = background_project_id
     sly.logger.debug(f"Selected project with backgrounds: {background_project_id}")
 
     if g.STATE.assets_api:
         sly.logger.info(
             "The app is working with Assets API, will try to read selected primitives."
         )
+
+        g.STATE.SETTINGS.use_assets = True
 
         selected_primitives = defaultdict(list)
         for workspace, checkboxes in g.STATE.ASSETS.checkboxes.items():
@@ -170,28 +176,73 @@ def save_settings():
             error_text.text = "At least one item on class tab must be selected."
             error_text.show()
             sly.logger.warning("No primitives were selected, stopping function.")
+            settings_tabs.set_active_tab("Classes")
             return
 
         for checkboxes in g.STATE.ASSETS.checkboxes.values():
             for checkbox in checkboxes.values():
                 checkbox.disable()
 
+        g.STATE.SETTINGS.selected_primitives = selected_primitives
+
         sly.logger.info(
-            f"Following primitives (Category: [Class]) were selected: {selected_primitives}."
+            f"Following primitives (Category: [Class]) were selected: {selected_primitives} and saved in global state."
         )
+
     else:
         sly.logger.info("The app is working with Supervisely project.")
+
+        g.STATE.SETTINGS.use_assets = False
+
         selected_classes = classes_table.get_selected_classes()
         if not selected_classes:
             error_text.text = "At least one item on class tab must be selected."
             error_text.show()
             sly.logger.warning("No classes were selected, stopping function.")
+            settings_tabs.set_active_tab("Classes")
             return
 
-        sly.logger.info(f"Following classes were selected: {selected_classes}.")
+        g.STATE.SETTINGS.selected_classes = selected_classes
+
+        sly.logger.info(
+            f"Following classes were selected: {selected_classes} and saved in global state."
+        )
 
     save_settings_button.hide()
     change_settings_button.show()
+
+    g.STATE.SETTINGS.use_all_datasets = use_all_datasets_checkbox.is_checked()
+    if not g.STATE.SETTINGS.use_all_datasets:
+        g.STATE.SETTINGS.background_datasets_id = [select_dataset.get_selected_id()]
+    else:
+        g.STATE.SETTINGS.background_datasets_id = [
+            dataset.id for dataset in g.api.dataset.get_list(background_project_id)
+        ]
+
+    g.STATE.SETTINGS.label_mode = labels_mode_select.get_value()
+    augs = augmentations_tab.get_text()
+    g.STATE.augs = augs if augs else None
+    g.STATE.SETTINGS.augmentations = yaml.safe_load(augs)
+
+    sly.logger.debug(f"Readed augmentations: {g.STATE.SETTINGS.augmentations}.")
+
+    g.STATE.SETTINGS.task_type = output_task_type.get_value()
+    if g.STATE.SETTINGS.task_type == "instance_segmentation":
+        g.STATE.SETTINGS.random_colors = random_colors_checkbox.is_checked()
+
+    settings_log_message = (
+        f"Settings were saved. App using assets: {g.STATE.SETTINGS.use_assets}, "
+        f"project ID with backgrounds: {g.STATE.SETTINGS.background_project_id}, "
+        f"using all datasets: {g.STATE.SETTINGS.use_all_datasets}. "
+        f"Background datasets ID: {g.STATE.SETTINGS.background_datasets_id}, "
+        f"label mode: {g.STATE.SETTINGS.label_mode}, "
+        f"selected classes: {g.STATE.SETTINGS.selected_classes} OR "
+        f"selected primitives: {g.STATE.SETTINGS.selected_primitives}. "
+        f"Task type: {g.STATE.SETTINGS.task_type}, "
+        f"random colors: {g.STATE.SETTINGS.random_colors}."
+    )
+
+    sly.logger.info(settings_log_message)
 
     for widget in widgets:
         widget.disable()
@@ -201,7 +252,6 @@ def save_settings():
     output.card.unlock()
     output.card.uncollapse()
 
-    card.lock()
     card.collapse()
 
 

@@ -43,15 +43,16 @@ class State:
     class Settings:
         def __init__(self):
             self.background_project_id = None
+
             self.use_all_datasets = None
-            self.background_dataset_id = None
+            self.background_datasets_id = None
+
             self.label_mode = None
 
             self.selected_classes = None
             self.augmentations = None
 
             self.task_type = None
-
             self.random_colors = None
 
             self.use_assets = None
@@ -100,12 +101,13 @@ class State:
 
         sly.logger.info(f"Augmentations were loaded from the file: {AUGS_FILE}.")
 
+    """
     def save_augs(self, augs):
         with open(AUGS_FILE, "w") as f:
             f.write(augs)
 
         sly.logger.info(f"Augmentations were saved to the file: {AUGS_FILE}.")
-        self.read_augs()
+        self.read_augs()"""
 
 
 STATE = State()
