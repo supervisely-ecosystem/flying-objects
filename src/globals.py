@@ -54,6 +54,9 @@ class State:
 
             self.random_colors = None
 
+            self.use_assets = None
+            self.selected_primitives = None
+
     class Assets:
         def __init__(self):
             self.data = {}

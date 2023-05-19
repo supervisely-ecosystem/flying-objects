@@ -151,7 +151,7 @@ def load_data():
         sly.logger.info(
             "The app is working with the Assets primitives with provided API key."
         )
-
+        settings.classes_table.hide()
         read_assets()
         settings.load_assets()
 
@@ -160,6 +160,7 @@ def load_data():
 
         settings.classes_table.read_meta(g.STATE.project_meta)
         settings.classes_table.show()
+        settings.classes_collapse.hide()
 
     settings.card.unlock()
     settings.card.uncollapse()

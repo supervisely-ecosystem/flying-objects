@@ -1,5 +1,7 @@
 import supervisely as sly
 
+from collections import defaultdict
+
 from supervisely.app.widgets import (
     Card,
     Container,
@@ -25,6 +27,9 @@ select_project = SelectProject(workspace_id=g.STATE.selected_workspace)
 use_all_datasets_checkbox = Checkbox("Use all datasets", checked=True)
 select_dataset = SelectDataset(compact=True, project_id=0)
 select_dataset.hide()
+
+error_text = Text(status="error")
+error_text.hide()
 
 labels_mode_select = Select(
     [Select.Item(value, label) for label, value in g.LABEL_MODES.items()],
@@ -107,7 +112,7 @@ widgets = [
 card = Card(
     title="2️⃣ Settings",
     description="Configure parameters of synthetic data generation.",
-    content=Container([settings_tabs, buttons_flexbox]),
+    content=Container([settings_tabs, buttons_flexbox, error_text]),
     collapsable=True,
     lock_message="Choose input data on step 1️⃣.",
 )
@@ -137,6 +142,52 @@ def all_datasets(use):
 
 @save_settings_button.click
 def save_settings():
+    error_text.hide()
+
+    sly.logger.debug("Save settings button was clicked.")
+
+    background_project_id = select_project.get_selected_id()
+    if not background_project_id:
+        error_text.text = "Project with backgrounds is not selected."
+        error_text.show()
+        return
+
+    sly.logger.debug(f"Selected project with backgrounds: {background_project_id}")
+
+    if g.STATE.assets_api:
+        sly.logger.info(
+            "The app is working with Assets API, will try to read selected primitives."
+        )
+
+        selected_primitives = defaultdict(list)
+        for workspace, checkboxes in g.STATE.ASSETS.checkboxes.items():
+            for name, checkbox in checkboxes.items():
+                if checkbox.is_checked() and name != "all":
+                    selected_primitives[workspace].append(name)
+        if not selected_primitives:
+            error_text.text = "At least one item on class tab must be selected."
+            error_text.show()
+            sly.logger.warning("No primitives were selected, stopping function.")
+            return
+
+        for checkboxes in g.STATE.ASSETS.checkboxes.values():
+            for checkbox in checkboxes.values():
+                checkbox.disable()
+
+        sly.logger.info(
+            f"Following primitives (Category: [Class]) were selected: {selected_primitives}."
+        )
+    else:
+        sly.logger.info("The app is working with Supervisely project.")
+        selected_classes = classes_table.get_selected_classes()
+        if not selected_classes:
+            error_text.text = "At least one item on class tab must be selected."
+            error_text.show()
+            sly.logger.warning("No classes were selected, stopping function.")
+            return
+
+        sly.logger.info(f"Following classes were selected: {selected_classes}.")
+
     save_settings_button.hide()
     change_settings_button.show()
 
@@ -149,6 +200,10 @@ def change_settings():
     save_settings_button.show()
     change_settings_button.hide()
 
+    for checkboxes in g.STATE.ASSETS.checkboxes.values():
+        for checkbox in checkboxes.values():
+            checkbox.enable()
+
     for widget in widgets:
         widget.enable()
 
@@ -157,23 +212,60 @@ def load_assets():
     sly.logger.debug("Starting to load data from Assets and creating checkboxes.")
     collapse_items = []
 
+    def create_checkbox_handler(workspace, **kwargs):
+        all_checkbox = kwargs.get("all_checkbox")
+        checkbox = kwargs.get("checkbox")
+        if all_checkbox:
+
+            @all_checkbox.value_changed
+            def handle_checkboxes(check):
+                if check:
+                    for checkbox in g.STATE.ASSETS.checkboxes[workspace].values():
+                        checkbox.check()
+                else:
+                    for checkbox in g.STATE.ASSETS.checkboxes[workspace].values():
+                        checkbox.uncheck()
+
+        if checkbox:
+
+            @checkbox.value_changed
+            def handle_checkbox(check):
+                if not check:
+                    g.STATE.ASSETS.checkboxes[workspace]["all"].uncheck()
+                else:
+                    checkboxes = [
+                        (name, checkbox)
+                        for name, checkbox in g.STATE.ASSETS.checkboxes[
+                            workspace
+                        ].items()
+                        if name != "all"
+                    ]
+
+                    # Name in tuple (name, checkbox) is only for debug purposes.
+
+                    for name, checkbox in checkboxes:
+                        if checkbox.is_checked() is False:
+                            return
+                    g.STATE.ASSETS.checkboxes[workspace]["all"].check()
+
     for workspace, project_infos in g.STATE.ASSETS.data.items():
-        checkboxes = {
-            "all": Checkbox("All"),
-        }
+        all_checkbox = Checkbox("All")
+        checkboxes = {"all": all_checkbox}
 
         sly.logger.debug(
             f"Trying to create {len(project_infos)} checkboxes for {workspace} workspace."
         )
 
         for project_info in project_infos:
-            checkboxes[project_info.name] = Checkbox(project_info.name)
+            checkbox = Checkbox(project_info.name)
+            checkboxes[project_info.name] = checkbox
+            create_checkbox_handler(workspace, checkbox=checkbox)
 
         g.STATE.ASSETS.checkboxes[workspace] = checkboxes
 
-        grid = Grid(columns=5, widgets=list(checkboxes.values()))
+        create_checkbox_handler(workspace, all_checkbox=all_checkbox)
 
-        # container = Container(list(checkboxes.values()))
+        grid = Grid(columns=5, widgets=list(checkboxes.values()))
 
         collapse_items.append(
             Collapse.Item(
@@ -196,18 +288,3 @@ def load_assets():
     classes_collapse.update_state()
 
     sly.logger.info("Successfully loaded data from Assets and updated collapse widget.")
-
-    checkboxes_all = [
-        workspace["all"] for workspace in g.STATE.ASSETS.checkboxes.values()
-    ]
-    names_all = g.STATE.ASSETS.checkboxes.keys()
-
-    lst = {}
-    for chb, name in zip(checkboxes_all, names_all):
-        lst[name] = chb.value_changed(func, name=name)
-
-    print(len(checkboxes_all))
-
-
-def func(is_checked, name=None):
-    print("test", is_checked, name)
