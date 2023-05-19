@@ -1,5 +1,7 @@
 import os
 
+from collections import defaultdict
+
 import supervisely as sly
 
 from dotenv import load_dotenv
@@ -45,7 +47,7 @@ class State:
             self.background_project_id = None
 
             self.use_all_datasets = None
-            self.background_datasets_id = None
+            self.background_dataset_ids = None
 
             self.label_mode = None
 
@@ -80,6 +82,13 @@ class State:
 
         self.augs = None
         self.read_augs()
+
+        self.background_image_infos = None
+        self.labels = defaultdict(lambda: defaultdict(list))
+        self.image_infos = {}
+
+        self.aug_color_fg = None
+        self.aug_spacial_fg = None
 
         self.continue_generation = True
 

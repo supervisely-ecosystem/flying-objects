@@ -213,9 +213,9 @@ def save_settings():
 
     g.STATE.SETTINGS.use_all_datasets = use_all_datasets_checkbox.is_checked()
     if not g.STATE.SETTINGS.use_all_datasets:
-        g.STATE.SETTINGS.background_datasets_id = [select_dataset.get_selected_id()]
+        g.STATE.SETTINGS.background_dataset_ids = [select_dataset.get_selected_id()]
     else:
-        g.STATE.SETTINGS.background_datasets_id = [
+        g.STATE.SETTINGS.background_dataset_ids = [
             dataset.id for dataset in g.api.dataset.get_list(background_project_id)
         ]
 
@@ -234,7 +234,7 @@ def save_settings():
         f"Settings were saved. App using assets: {g.STATE.SETTINGS.use_assets}, "
         f"project ID with backgrounds: {g.STATE.SETTINGS.background_project_id}, "
         f"using all datasets: {g.STATE.SETTINGS.use_all_datasets}. "
-        f"Background datasets ID: {g.STATE.SETTINGS.background_datasets_id}, "
+        f"Background datasets ID: {g.STATE.SETTINGS.background_dataset_ids}, "
         f"label mode: {g.STATE.SETTINGS.label_mode}, "
         f"selected classes: {g.STATE.SETTINGS.selected_classes} OR "
         f"selected primitives: {g.STATE.SETTINGS.selected_primitives}. "
@@ -244,6 +244,17 @@ def save_settings():
 
     sly.logger.info(settings_log_message)
 
+    background_image_infos = []
+
+    for dataset_id in g.STATE.SETTINGS.background_dataset_ids:
+        background_image_infos.extend(g.api.image.get_list(dataset_id))
+
+    g.STATE.background_image_infos = background_image_infos
+
+    sly.logger.debug(
+        f"Readed {len(background_image_infos)} background image infos and saved in the global state."
+    )
+
     for widget in widgets:
         widget.disable()
 
@@ -251,6 +262,8 @@ def save_settings():
     preview.card.uncollapse()
     output.card.unlock()
     output.card.uncollapse()
+
+    cache_annotations()
 
     card.collapse()
 
@@ -353,3 +366,31 @@ def load_assets():
     classes_collapse.update_state()
 
     sly.logger.info("Successfully loaded data from Assets and updated collapse widget.")
+
+
+def cache_annotations():
+    sly.logger.info(
+        f"Will try to cache annotations for project {g.STATE.selected_project}."
+    )
+
+    for dataset in g.api.dataset.get_list(g.STATE.selected_project):
+        image_infos = g.api.image.get_list(dataset.id)
+        for batched_image_infos in sly.batched(image_infos):
+            batched_image_ids = [image_info.id for image_info in batched_image_infos]
+            batched_ann_infos = g.api.annotation.download_batch(
+                dataset.id, batched_image_ids
+            )
+            for image_id, image_info, ann_info in zip(
+                batched_image_ids, batched_image_infos, batched_ann_infos
+            ):
+                ann = sly.Annotation.from_json(
+                    ann_info.annotation, g.STATE.project_meta
+                )
+                g.STATE.image_infos[image_id] = image_info
+                for label in ann.labels:
+                    g.STATE.labels[label.obj_class.name][image_id].append(label)
+
+    sly.logger.info(
+        f"Finished caching {len(g.STATE.image_infos)} images infos in global state."
+    )
+    sly.logger.info("Finished caching annotations for project in global state.")
