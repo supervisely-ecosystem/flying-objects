@@ -8,7 +8,7 @@ from supervisely.app.widgets import (
     Card,
     LabeledImage,
     Button,
-)  # Container, Grid, Empty
+)
 
 import supervisely as sly
 import numpy as np
@@ -20,7 +20,6 @@ from src.postprocess import postprocess, highlight_instances
 
 image_preview = LabeledImage()
 image_preview.hide()
-# image_preview_grid = Grid([Empty(), image_preview, Empty()], columns=3)
 random_image_button = Button("New random image", icon="zmdi zmdi-refresh")
 
 card = Card(
@@ -106,23 +105,6 @@ def synthesize():
 
     sly.logger.debug(f"Prepared list with {len(to_generate)} objects to generate.")
 
-    # Debug code, because projects on assets have non unique classes and should be fixed.
-
-    debug_names_in_res_classes = [obj_class.name for obj_class in res_classes]
-    print("DEBUG PRINT OF NAMES IN RES CLASSES:", debug_names_in_res_classes)
-    print(
-        "DEBUG PRINT OF LIST OF DUPLICATE NAMES:",
-        [
-            name
-            for name in debug_names_in_res_classes
-            if debug_names_in_res_classes.count(name) > 1
-        ],
-    )
-    if len(debug_names_in_res_classes) != len(set(debug_names_in_res_classes)):
-        raise RuntimeError("Non unique names in res classes.")
-
-    # End of debug code. Should be deleted after fixing the assets data in instance.
-
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
     res_labels = []
@@ -150,7 +132,6 @@ def synthesize():
         for label in background_ann.labels:
             obj_class = res_meta.get_obj_class(label.obj_class.name)
             if obj_class is None:
-                # The class wasn't selected in the project settings.
                 continue
             if isinstance(label.geometry, sly.Bitmap):
                 res_labels.append(label.clone(obj_class=obj_class))
