@@ -20,7 +20,7 @@ from src.postprocess import postprocess, highlight_instances
 
 image_preview = LabeledImage()
 image_preview.hide()
-random_image_button = Button("New random image", icon="zmdi zmdi-refresh")
+random_image_button = Button("Random image", icon="zmdi zmdi-refresh")
 
 card = Card(
     "3️⃣ Random preview",
@@ -37,6 +37,7 @@ card.collapse()
 @random_image_button.click
 def preview():
     random_image_button.loading = True
+    random_image_button.text = "Generating..."
 
     image, ann, res_meta = synthesize()
     res_meta, ann = postprocess(ann, res_meta, sly.ProjectMeta())
@@ -65,6 +66,7 @@ def preview():
 
     sly.logger.debug("Updated image in prevew widget.")
 
+    random_image_button.text = "Random image"
     random_image_button.loading = False
 
 
@@ -166,8 +168,20 @@ def synthesize():
             api = g.api
             sly.logger.debug("The app in project mode, will use project api.")
 
-        # image_info = g.STATE.image_infos[image_id] # For caching later.
-        image_np = api.image.download_np(image_id)
+        if image_id in g.STATE.cached_images:
+            sly.logger.debug(f"Image {image_id} is cached, will read it from cache.")
+            try:
+                image_np = sly.image.read(g.STATE.cached_images[image_id])
+            except Exception as e:
+                sly.logger.warning(
+                    f"There was an error while reading cached image: {e}."
+                )
+                image_np = api.image.download_np(image_id)
+        else:
+            sly.logger.debug(f"Image {image_id} is not cached, will download it.")
+
+            image_info = g.STATE.image_infos[image_id]
+            image_np = get_np_using_cache(api, image_info)
 
         label_img, label_mask = get_label_foreground(image_np, label)
 
@@ -271,3 +285,18 @@ def count_visibility(cover_img, bitmap: sly.Bitmap, idx, x, y):
             difference.pop(value)
 
     return difference
+
+
+def get_np_using_cache(api: sly.Api, image_info):
+    image_path = os.path.join(g.CACHE_DIR, image_info.name)
+
+    g.STATE.cached_images[image_info.id] = image_path
+    sly.logger.debug(
+        f"Image {image_info.id} is cached to {image_path} and saved in global state."
+    )
+
+    if not sly.fs.file_exists(image_path):
+        api.image.download_path(image_info.id, image_path)
+
+    image_np = sly.image.read(image_path)
+    return image_np

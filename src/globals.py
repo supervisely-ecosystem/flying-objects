@@ -104,6 +104,8 @@ class State:
 
         self.continue_generation = True
 
+        self.cached_images = {}
+
     def get_project_meta(self):
         sly.logger.debug(
             f"Trying to get project meta for project ID: {self.selected_project}."
@@ -135,19 +137,19 @@ STATE = State()
 
 
 def key_from_file():
-    """Tries to load Target API key and the instance address from the team files."""
+    """Tries to load Assets API key and the instance address from the team files."""
     try:
-        # Get target.env from the team files.
+        # Get assets.env from the team files.
         INPUT_FILE = sly.env.file(True)
         api.file.download(STATE.selected_team, INPUT_FILE, ENV_FILE)
-        sly.logger.info(f"Target API key file was downloaded to {ENV_FILE}.")
+        sly.logger.info(f"Assets API key file was downloaded to {ENV_FILE}.")
 
-        # Read Target API key from the file.
+        # Read Assets API key from the file.
         load_dotenv(ENV_FILE)
         STATE.assets_api_key = os.environ["ASSETS_API_TOKEN"]
 
-        sly.logger.info("Target API key and instance were loaded from the team files.")
+        sly.logger.info("Assets API key was loaded from the team files.")
     except Exception:
         sly.logger.info(
-            "No file with Target API key was provided, starting in input mode."
+            "No file with Assets API key was provided, starting in input mode."
         )

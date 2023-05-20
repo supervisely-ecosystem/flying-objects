@@ -167,7 +167,9 @@ def read_assets():
     sly.logger.debug("Trying to read the Assets primitives data from API.")
 
     team_info = g.STATE.assets_api.team.get_info_by_name(g.ASSETS_TEAM)
-    workspaces = g.STATE.assets_api.workspace.get_list(team_info.id)
+    workspaces = sorted(
+        g.STATE.assets_api.workspace.get_list(team_info.id), key=lambda x: x.name
+    )
 
     sly.logger.info(
         f"Succesfully read {len(workspaces)} workspaces in {team_info.name}."

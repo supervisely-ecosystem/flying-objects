@@ -120,9 +120,12 @@ widgets = [
 card = Card(
     title="2️⃣ Settings",
     description="Configure parameters of synthetic data generation.",
-    content=Container([settings_tabs, buttons_flexbox, error_text, caching_progress]),
+    content=Container(
+        [settings_tabs, save_settings_button, error_text, caching_progress]
+    ),
     collapsable=True,
     lock_message="Choose input data on step 1️⃣.",
+    content_top_right=change_settings_button,
 )
 card.lock()
 card.collapse()
@@ -151,6 +154,7 @@ def all_datasets(use):
 @save_settings_button.click
 def save_settings():
     error_text.hide()
+    save_settings_button.text = "Applying..."
 
     sly.logger.debug("Save settings button was clicked.")
 
@@ -270,6 +274,7 @@ def save_settings():
     output.card.uncollapse()
 
     save_settings_button.hide()
+    save_settings_button.text = "Save settings"
     change_settings_button.show()
 
     card.collapse()
@@ -436,11 +441,6 @@ def cache_annotations():
 
 
 def build_assets_project():
-    # 1. Read names of workspaces and projects.
-    # 2. Iterate over all projects (with datasets) and download them.
-    # 3. Structure: Project Dir -> Dir for EVERY dataset (not merging datasets) -> images and annotations.
-    # 4. Create a new project with MERGED META.
-
     res_project_meta = None
 
     sly.logger.debug(
