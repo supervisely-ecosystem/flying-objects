@@ -408,6 +408,7 @@ def load_assets(pbar=None):
     classes_collapse.update_data()
     classes_collapse.update_state()
     classes_collapse.loading = False
+    classes_collapse.show()
 
     sly.logger.info("Successfully loaded data from Assets and updated collapse widget.")
 
