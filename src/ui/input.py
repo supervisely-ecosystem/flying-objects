@@ -18,6 +18,8 @@ from supervisely.app.widgets import (
 
 import src.globals as g
 import src.ui.settings as settings
+import src.ui.preview as preview
+import src.ui.output as output
 
 select_project = SelectProject(workspace_id=g.STATE.selected_workspace)
 
@@ -176,6 +178,9 @@ def load_data():
     settings.card.uncollapse()
     card.collapse()
 
+    for widget in settings.widgets:
+        widget.enable()
+
 
 def read_assets():
     sly.logger.debug("Trying to read the Assets primitives data from API.")
@@ -223,6 +228,18 @@ def change_project():
 
     settings.card.lock()
     settings.card.collapse()
+
+    preview.image_preview.clean_up()
+
+    preview.card.lock()
+    preview.card.collapse()
+
+    output.card.lock()
+    output.card.collapse()
+
+    settings.change_settings_button.hide()
+    settings.save_settings_button.show()
+    preview.random_image_button.disable()
 
 
 @check_key_button.click
@@ -290,8 +307,20 @@ def change_key():
     settings.card.lock()
     settings.card.collapse()
 
+    preview.image_preview.clean_up()
+
     g.STATE.assets_api_key = None
     g.STATE.assets_api = None
+
+    preview.card.lock()
+    preview.card.collapse()
+
+    output.card.lock()
+    output.card.collapse()
+
+    settings.change_settings_button.hide()
+    settings.save_settings_button.show()
+    preview.random_image_button.disable()
 
 
 g.key_from_file()
