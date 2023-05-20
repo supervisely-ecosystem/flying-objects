@@ -21,6 +21,7 @@ from src.postprocess import postprocess, highlight_instances
 image_preview = LabeledImage()
 image_preview.hide()
 random_image_button = Button("Random image", icon="zmdi zmdi-refresh")
+random_image_button.disable()
 
 card = Card(
     "3️⃣ Random preview",

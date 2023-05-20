@@ -13,11 +13,13 @@ AUGS_FILE = os.path.join(ABSOLUTE_PATH, "augs.yaml")
 ENV_FILE = "assets.env"
 
 ASSETS_ADDRESS = "https://assets.supervise.ly/"
+WEB_ADDRESS = "https://ecosystem.supervisely.com/primitives/assets/"
 ASSETS_TEAM = "primitives"
 ASSETS_TEAM_ID = 3
 
-load_dotenv("local.env")
-load_dotenv(os.path.expanduser("~/supervisely.env"))
+if sly.is_development():
+    load_dotenv("local.env")
+    load_dotenv(os.path.expanduser("~/supervisely.env"))
 api: sly.Api = sly.Api.from_env()
 
 SLY_APP_DATA_DIR = sly.app.get_data_dir()
@@ -145,6 +147,9 @@ def key_from_file():
         sly.logger.info(f"Assets API key file was downloaded to {ENV_FILE}.")
 
         # Read Assets API key from the file.
+        if os.path.exists(ENV_FILE):
+            sly.logger.info(f"File {ENV_FILE} exists, reading Assets API key.")
+
         load_dotenv(ENV_FILE)
         STATE.assets_api_key = os.environ["ASSETS_API_TOKEN"]
 

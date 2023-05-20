@@ -1,6 +1,7 @@
 import supervisely as sly
 
 import yaml
+import urllib.parse
 
 from collections import defaultdict
 
@@ -154,7 +155,6 @@ def all_datasets(use):
 @save_settings_button.click
 def save_settings():
     error_text.hide()
-    save_settings_button.text = "Applying..."
 
     sly.logger.debug("Save settings button was clicked.")
 
@@ -216,6 +216,8 @@ def save_settings():
             f"Following classes were selected: {selected_classes} and saved in global state."
         )
 
+    save_settings_button.text = "Applying..."
+
     g.STATE.SETTINGS.use_all_datasets = use_all_datasets_checkbox.is_checked()
     if not g.STATE.SETTINGS.use_all_datasets:
         g.STATE.SETTINGS.background_dataset_ids = [select_dataset.get_selected_id()]
@@ -264,7 +266,7 @@ def save_settings():
         widget.disable()
 
     if g.STATE.SETTINGS.use_assets:
-        build_assets_project()
+        download_assets()
 
     cache_annotations()
 
@@ -280,6 +282,7 @@ def save_settings():
     card.collapse()
 
     preview.preview()
+    preview.random_image_button.enable()
 
 
 @change_settings_button.click
@@ -287,6 +290,7 @@ def change_settings():
     card.uncollapse()
     save_settings_button.show()
     change_settings_button.hide()
+    preview.random_image_button.disable()
 
     preview.image_preview.clean_up()
     preview.image_preview.hide()
@@ -356,7 +360,21 @@ def load_assets():
         )
 
         for project_info in project_infos:
-            checkbox = Checkbox(project_info.name)
+            project_stats = g.STATE.assets_api.project.get_stats(project_info.id)
+            object_count = project_stats["objects"]["total"]["objectsInDataset"]
+
+            if object_count == 0:
+                continue
+            primitive_url = (
+                g.WEB_ADDRESS
+                + f"{urllib.parse.quote(project_info.name).lower()}-{project_info.id}/"
+            )
+
+            text = Text(
+                f"{project_info.name} <a href='{primitive_url}'>({object_count})</a>"
+            )
+
+            checkbox = Checkbox(text)
             checkboxes[project_info.name] = checkbox
             create_checkbox_handler(workspace, checkbox=checkbox)
 
@@ -440,7 +458,7 @@ def cache_annotations():
     sly.logger.info("Finished caching annotations for project in global state.")
 
 
-def build_assets_project():
+def download_assets():
     res_project_meta = None
 
     sly.logger.debug(
