@@ -22,7 +22,7 @@
   "headless": false,
   "context_menu": {
     "context_category": "Synthetic data",
-    "target": ["images_project", "ecosystem"]
+    "target": ["images_project", "ecosystem", "files_file"]
   },
   "poster": "https://user-images.githubusercontent.com/106374579/182824459-291c34dc-0a5a-4c97-a297-d1ed4143c58d.png"
 }
