@@ -1,7 +1,10 @@
+import os
+import secrets
+
 from random import choice, randint, shuffle
 from collections import defaultdict
 
-from supervisely.app.widgets import Card, LabeledImage, Button, Container
+from supervisely.app.widgets import Card, LabeledImage, Button, Container, Grid, Empty
 
 import supervisely as sly
 import numpy as np
@@ -12,12 +15,14 @@ import src.rasterize as rasterize
 from src.postprocess import postprocess, highlight_instances
 
 image_preview = LabeledImage()
+image_preview.hide()
+image_preview_grid = Grid([Empty(), image_preview, Empty()], columns=3)
 random_image_button = Button("New random image", icon="zmdi zmdi-refresh")
 
 card = Card(
     "3️⃣ Random preview",
     "Preview synthetic images and labels, overlapping is handled automatically, fully covered images are skipped.",
-    content=Container([random_image_button, image_preview]),
+    content=Container([random_image_button, image_preview_grid]),
     collapsable=True,
     lock_message="Save settings on step 2️⃣.",
 )
@@ -27,6 +32,8 @@ card.collapse()
 
 @random_image_button.click
 def preview():
+    random_image_button.loading = True
+
     image, ann, res_meta = synthesize()
     res_meta, ann = postprocess(ann, res_meta, sly.ProjectMeta())
     if (
@@ -36,6 +43,25 @@ def preview():
         res_meta, ann = highlight_instances(res_meta, ann)
 
     sly.logger.info("Successfully generated image and annotation.")
+
+    random_image_name = f"{secrets.token_hex(10)}.png"
+
+    image_path = os.path.join(g.STATIC_DIR, random_image_name)
+
+    sly.image.write(image_path, image)
+
+    sly.logger.info(f"Succesfully saved image to static dir with path {image_path}.")
+
+    image_preview.set(
+        image_url=os.path.join("static", random_image_name),
+        ann=ann,
+        title=random_image_name,
+    )
+    image_preview.show()
+
+    sly.logger.debug("Updated image in prevew widget.")
+
+    random_image_button.loading = False
 
 
 def synthesize():
@@ -48,15 +74,16 @@ def synthesize():
     background_image_info = choice(g.STATE.background_image_infos)
     background_image_np = g.api.image.download_np(background_image_info.id)
 
-    if g.STATE.SETTINGS.use_assets:
-        raise NotImplementedError("Assets are not supported yet.")
-
     sly.logger.debug(
         f"Successfully downloaded background image with id {background_image_info.id} "
         f"and shape {background_image_np.shape} as numpy array."
     )
 
-    class_names = g.STATE.SETTINGS.selected_classes
+    if g.STATE.SETTINGS.use_assets:
+        class_names = g.STATE.ASSETS.class_names
+
+    else:
+        class_names = g.STATE.SETTINGS.selected_classes
 
     res_image = background_image_np.copy()
 
@@ -74,6 +101,21 @@ def synthesize():
 
     sly.logger.debug(f"Prepared list with {len(to_generate)} objects to generate.")
 
+    # Debug code, because projects on assets have non unique classes and should be fixed.
+
+    debug_names_in_res_classes = [obj_class.name for obj_class in res_classes]
+    print("DEBUG PRINT OF NAMES IN RES CLASSES:", debug_names_in_res_classes)
+    print(
+        "LIST OF DUPLICATE NAMES:",
+        [
+            name
+            for name in debug_names_in_res_classes
+            if debug_names_in_res_classes.count(name) > 1
+        ],
+    )
+    if len(debug_names_in_res_classes) != len(set(debug_names_in_res_classes)):
+        raise RuntimeError("Non unique names in res classes.")
+
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
     res_labels = []
@@ -81,14 +123,25 @@ def synthesize():
     if g.STATE.SETTINGS.label_mode == "merge":
         sly.logger.info("Merge mode, will handle labels from background project.")
 
-        background_project_meta = g.api.project.get_meta(
+        background_project_meta_json = g.api.project.get_meta(
             g.STATE.SETTINGS.background_project_id
         )
+        background_project_meta = sly.ProjectMeta.from_json(
+            background_project_meta_json
+        )
 
+        sly.logger.debug(
+            f"Successfully downloaded meta of background project with id "
+            f"{g.STATE.SETTINGS.background_project_id} and converted it to ProjectMeta."
+        )
+        print("Before receiving background ann json.")
         background_ann_json = g.api.annotation.download_json(background_image_info.id)
+
+        print("After receiving background ann json.")
         background_ann = sly.Annotation.from_json(
             background_ann_json, background_project_meta
         )
+        print("After converting background ann json to annotation.")
 
         for label in background_ann.labels:
             obj_class = res_meta.get_obj_class(label.obj_class.name)
@@ -121,8 +174,15 @@ def synthesize():
         image_id = choice(list(g.STATE.labels[class_name].keys()))
         label = choice(g.STATE.labels[class_name][image_id])
 
+        if g.STATE.SETTINGS.use_assets:
+            api = g.STATE.assets_api
+            sly.logger.debug("The app in assets mode, will use assets api.")
+        else:
+            api = g.api
+            sly.logger.debug("The app in project mode, will use project api.")
+
         # image_info = g.STATE.image_infos[image_id] # For caching later.
-        image_np = g.api.image.download_np(image_id)
+        image_np = api.image.download_np(image_id)
 
         label_img, label_mask = get_label_foreground(image_np, label)
 

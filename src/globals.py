@@ -14,6 +14,7 @@ ENV_FILE = "assets.env"
 
 ASSETS_ADDRESS = "https://assets.supervise.ly/"
 ASSETS_TEAM = "primitives"
+ASSETS_TEAM_ID = 3
 
 load_dotenv("local.env")
 load_dotenv(os.path.expanduser("~/supervisely.env"))
@@ -21,7 +22,9 @@ api: sly.Api = sly.Api.from_env()
 
 SLY_APP_DATA_DIR = sly.app.get_data_dir()
 STATIC_DIR = os.path.join(SLY_APP_DATA_DIR, "static")
+CACHE_DIR = os.path.join(SLY_APP_DATA_DIR, "cache")
 os.makedirs(STATIC_DIR, exist_ok=True)
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 LABEL_MODES = {
     "Ignore labels": "ignore",
@@ -60,10 +63,19 @@ class State:
             self.use_assets = None
             self.selected_primitives = None
 
+        def clear(self):
+            self.__init__()
+
     class Assets:
         def __init__(self):
             self.data = {}
             self.checkboxes = {}
+            self.project_ids = []
+            self.class_names = []
+
+        def clear(self):
+            self.project_ids = []
+            self.class_names = []
 
     def __init__(self):
         self.SETTINGS = self.Settings()

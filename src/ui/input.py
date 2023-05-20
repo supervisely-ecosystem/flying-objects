@@ -131,8 +131,6 @@ def load_project():
     )
     project_info = g.api.project.get_info_by_id(g.STATE.selected_project)
 
-    print(project_info)
-
     project_thumbnail.set(project_info)
     project_thumbnail.show()
 
@@ -176,9 +174,10 @@ def read_assets():
     )
 
     for workspace in workspaces:
-        g.STATE.ASSETS.data[workspace.name] = g.STATE.assets_api.project.get_list(
-            workspace.id
+        project_list = sorted(
+            g.STATE.assets_api.project.get_list(workspace.id), key=lambda x: x.name
         )
+        g.STATE.ASSETS.data[workspace.name] = project_list
 
     sly.logger.info(
         "Successfully read all projects from Assets primitives and saved them in global state."

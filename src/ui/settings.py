@@ -21,6 +21,7 @@ from supervisely.app.widgets import (
     Flexbox,
     Collapse,
     Grid,
+    Progress,
 )
 
 import src.globals as g
@@ -100,6 +101,9 @@ change_settings_button = Button(
 change_settings_button.hide()
 buttons_flexbox = Flexbox([save_settings_button, change_settings_button])
 
+caching_progress = Progress()
+caching_progress.hide()
+
 widgets = [
     settings_tabs,
     select_project,
@@ -116,7 +120,7 @@ widgets = [
 card = Card(
     title="2️⃣ Settings",
     description="Configure parameters of synthetic data generation.",
-    content=Container([settings_tabs, buttons_flexbox, error_text]),
+    content=Container([settings_tabs, buttons_flexbox, error_text, caching_progress]),
     collapsable=True,
     lock_message="Choose input data on step 1️⃣.",
 )
@@ -208,9 +212,6 @@ def save_settings():
             f"Following classes were selected: {selected_classes} and saved in global state."
         )
 
-    save_settings_button.hide()
-    change_settings_button.show()
-
     g.STATE.SETTINGS.use_all_datasets = use_all_datasets_checkbox.is_checked()
     if not g.STATE.SETTINGS.use_all_datasets:
         g.STATE.SETTINGS.background_dataset_ids = [select_dataset.get_selected_id()]
@@ -258,20 +259,35 @@ def save_settings():
     for widget in widgets:
         widget.disable()
 
+    if g.STATE.SETTINGS.use_assets:
+        build_assets_project()
+
+    cache_annotations()
+
     preview.card.unlock()
     preview.card.uncollapse()
     output.card.unlock()
     output.card.uncollapse()
 
-    cache_annotations()
+    save_settings_button.hide()
+    change_settings_button.show()
 
     card.collapse()
+
+    preview.preview()
 
 
 @change_settings_button.click
 def change_settings():
+    card.uncollapse()
     save_settings_button.show()
     change_settings_button.hide()
+
+    preview.image_preview.clean_up()
+    preview.image_preview.hide()
+
+    g.STATE.SETTINGS.clear()
+    g.STATE.ASSETS.clear()
 
     for checkboxes in g.STATE.ASSETS.checkboxes.values():
         for checkbox in checkboxes.values():
@@ -369,28 +385,106 @@ def load_assets():
 
 
 def cache_annotations():
-    sly.logger.info(
-        f"Will try to cache annotations for project {g.STATE.selected_project}."
-    )
+    sly.logger.info("Caching function for annotations was started.")
 
-    for dataset in g.api.dataset.get_list(g.STATE.selected_project):
-        image_infos = g.api.image.get_list(dataset.id)
-        for batched_image_infos in sly.batched(image_infos):
-            batched_image_ids = [image_info.id for image_info in batched_image_infos]
-            batched_ann_infos = g.api.annotation.download_batch(
-                dataset.id, batched_image_ids
-            )
-            for image_id, image_info, ann_info in zip(
-                batched_image_ids, batched_image_infos, batched_ann_infos
-            ):
-                ann = sly.Annotation.from_json(
-                    ann_info.annotation, g.STATE.project_meta
-                )
-                g.STATE.image_infos[image_id] = image_info
-                for label in ann.labels:
-                    g.STATE.labels[label.obj_class.name][image_id].append(label)
+    if g.STATE.SETTINGS.use_assets:
+        api = g.STATE.assets_api
+        project_ids = g.STATE.ASSETS.project_ids
+
+        sly.logger.debug(f"The app working with assets. Project IDs: {project_ids}.")
+
+    else:
+        api = g.api
+        project_ids = [g.STATE.selected_project.id]
+
+        sly.logger.debug(
+            f"The app working with current project. Project IDs: {project_ids}."
+        )
+
+    sly.logger.debug(f"Trying to cache annotations for {len(project_ids)} projects.")
+
+    caching_progress.show()
+    with caching_progress(
+        message="Caching images and annotations...", total=len(project_ids)
+    ) as pbar:
+        for project_id in project_ids:
+            datasets = api.dataset.get_list(project_id)
+            for dataset in datasets:
+                image_infos = api.image.get_list(dataset.id)
+                for batched_image_infos in sly.batched(image_infos):
+                    batched_image_ids = [
+                        image_info.id for image_info in batched_image_infos
+                    ]
+                    batched_ann_infos = api.annotation.download_batch(
+                        dataset.id, batched_image_ids
+                    )
+                    for image_id, image_info, ann_info in zip(
+                        batched_image_ids, batched_image_infos, batched_ann_infos
+                    ):
+                        ann = sly.Annotation.from_json(
+                            ann_info.annotation, g.STATE.project_meta
+                        )
+                        g.STATE.image_infos[image_id] = image_info
+                        for label in ann.labels:
+                            g.STATE.labels[label.obj_class.name][image_id].append(label)
+            pbar.update(1)
 
     sly.logger.info(
         f"Finished caching {len(g.STATE.image_infos)} images infos in global state."
     )
     sly.logger.info("Finished caching annotations for project in global state.")
+
+
+def build_assets_project():
+    # 1. Read names of workspaces and projects.
+    # 2. Iterate over all projects (with datasets) and download them.
+    # 3. Structure: Project Dir -> Dir for EVERY dataset (not merging datasets) -> images and annotations.
+    # 4. Create a new project with MERGED META.
+
+    res_project_meta = None
+
+    sly.logger.debug(
+        f"Starting iteration over {len(g.STATE.SETTINGS.selected_primitives)} selected categories of primitives."
+    )
+
+    for workspace_name, project_names in g.STATE.SETTINGS.selected_primitives.items():
+        workspace_info = g.STATE.assets_api.workspace.get_info_by_name(
+            g.ASSETS_TEAM_ID, workspace_name
+        )
+
+        sly.logger.debug(f"Retrieved workspace info for {workspace_name}.")
+
+        for project_name in project_names:
+            sly.logger.debug(
+                f"Working in workspace {workspace_name} and project {project_name}."
+            )
+
+            project_info = g.STATE.assets_api.project.get_info_by_name(
+                workspace_info.id, project_name
+            )
+            project_meta_json = g.STATE.assets_api.project.get_meta(project_info.id)
+            project_meta = sly.ProjectMeta.from_json(project_meta_json)
+
+            g.STATE.ASSETS.project_ids.append(project_info.id)
+            sly.logger.debug(
+                f"Added project ID {project_info.id} for {project_name} to global state."
+            )
+
+            class_names = [obj_class.name for obj_class in project_meta.obj_classes]
+            g.STATE.ASSETS.class_names.extend(class_names)
+
+            sly.logger.debug(
+                f"Added {class_names} to global state. "
+                f"Current number of classes in global state: {len(g.STATE.ASSETS.class_names)}."
+            )
+
+            if res_project_meta is None:
+                res_project_meta = project_meta
+            else:
+                res_project_meta = res_project_meta.merge(project_meta)
+
+            sly.logger.debug(f"Successfully merged meta for {project_name}.")
+
+    g.STATE.project_meta = res_project_meta
+
+    sly.logger.info("Successfully merged meta from all selected projects in assets.")
