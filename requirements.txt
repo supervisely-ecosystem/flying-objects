@@ -1,5 +1,5 @@
 git+https://github.com/supervisely/supervisely.git@widget-collapse
-supervisely[apps]==6.72.10
+# supervisely[apps]==6.72.10
 PyYAML==5.4.1
 albumentations==0.5.2
-opencv-python-headless==4.1.2.30
+# opencv-python-headless==4.1.2.30
