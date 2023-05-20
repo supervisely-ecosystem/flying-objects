@@ -106,7 +106,7 @@ def synthesize():
     debug_names_in_res_classes = [obj_class.name for obj_class in res_classes]
     print("DEBUG PRINT OF NAMES IN RES CLASSES:", debug_names_in_res_classes)
     print(
-        "LIST OF DUPLICATE NAMES:",
+        "DEBUG PRINT OF LIST OF DUPLICATE NAMES:",
         [
             name
             for name in debug_names_in_res_classes
@@ -115,6 +115,8 @@ def synthesize():
     )
     if len(debug_names_in_res_classes) != len(set(debug_names_in_res_classes)):
         raise RuntimeError("Non unique names in res classes.")
+
+    # End of debug code. Should be deleted after fixing the assets data in instance.
 
     res_meta = sly.ProjectMeta(obj_classes=sly.ObjClassCollection(res_classes))
 
@@ -134,14 +136,11 @@ def synthesize():
             f"Successfully downloaded meta of background project with id "
             f"{g.STATE.SETTINGS.background_project_id} and converted it to ProjectMeta."
         )
-        print("Before receiving background ann json.")
         background_ann_json = g.api.annotation.download_json(background_image_info.id)
 
-        print("After receiving background ann json.")
         background_ann = sly.Annotation.from_json(
             background_ann_json, background_project_meta
         )
-        print("After converting background ann json to annotation.")
 
         for label in background_ann.labels:
             obj_class = res_meta.get_obj_class(label.obj_class.name)
