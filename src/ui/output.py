@@ -16,7 +16,7 @@ from supervisely.app.widgets import (
 )
 
 import src.globals as g
-from src.postprocess import postprocess, highlight_instances
+from src.postprocess import postprocess  # , highlight_instances
 import src.ui.preview as preview
 
 images_count_input = InputNumber(10, min=1)
@@ -126,6 +126,16 @@ def generate():
             merged_meta, new_ann = postprocess(ann, cur_meta, res_project_meta)
 
             sly.logger.debug(f"Postprocessed an image #{i + 1}. Checking meta...")
+
+            # This functionality is supposed to be working only with preview.
+            # If launched while generating it will cause to change names of the classes.
+            # Probably it won't be needed and should be deleted.
+
+            # if (
+            #    g.STATE.SETTINGS.task_type == "instance_segmentation"
+            #    and g.STATE.SETTINGS.random_colors is True
+            # ):
+            #    merged_meta, new_ann = highlight_instances(merged_meta, new_ann)
 
             if res_project_meta != merged_meta:
                 sly.logger.debug("Meta was changed, updating project meta...")

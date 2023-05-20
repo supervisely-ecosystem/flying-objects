@@ -395,7 +395,7 @@ def cache_annotations():
 
     else:
         api = g.api
-        project_ids = [g.STATE.selected_project.id]
+        project_ids = [g.STATE.selected_project]
 
         sly.logger.debug(
             f"The app working with current project. Project IDs: {project_ids}."
