@@ -4,7 +4,11 @@ import secrets
 from random import choice, randint, shuffle
 from collections import defaultdict
 
-from supervisely.app.widgets import Card, LabeledImage, Button, Container, Grid, Empty
+from supervisely.app.widgets import (
+    Card,
+    LabeledImage,
+    Button,
+)  # Container, Grid, Empty
 
 import supervisely as sly
 import numpy as np
@@ -16,15 +20,16 @@ from src.postprocess import postprocess, highlight_instances
 
 image_preview = LabeledImage()
 image_preview.hide()
-image_preview_grid = Grid([Empty(), image_preview, Empty()], columns=3)
+# image_preview_grid = Grid([Empty(), image_preview, Empty()], columns=3)
 random_image_button = Button("New random image", icon="zmdi zmdi-refresh")
 
 card = Card(
     "3️⃣ Random preview",
     "Preview synthetic images and labels, overlapping is handled automatically, fully covered images are skipped.",
-    content=Container([random_image_button, image_preview_grid]),
+    content=image_preview,
     collapsable=True,
     lock_message="Save settings on step 2️⃣.",
+    content_top_right=random_image_button,
 )
 card.lock()
 card.collapse()
