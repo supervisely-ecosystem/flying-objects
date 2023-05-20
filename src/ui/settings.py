@@ -311,7 +311,8 @@ def change_settings():
     output.card.collapse()
 
 
-def load_assets():
+def load_assets(pbar=None):
+    classes_collapse.loading = True
     sly.logger.debug("Starting to load data from Assets and creating checkboxes.")
     collapse_items = []
 
@@ -395,6 +396,9 @@ def load_assets():
             f"Succesfully created {len(project_infos)} checkboxes and added them to collapse items."
         )
 
+        if pbar:
+            pbar.update(1)
+
     sly.logger.debug(
         "Finished loading data from Assets and creating checkboxes. "
         f"Tring to add {len(collapse_items)} collapse items to collapse widget."
@@ -403,6 +407,7 @@ def load_assets():
     classes_collapse._items = collapse_items
     classes_collapse.update_data()
     classes_collapse.update_state()
+    classes_collapse.loading = False
 
     sly.logger.info("Successfully loaded data from Assets and updated collapse widget.")
 

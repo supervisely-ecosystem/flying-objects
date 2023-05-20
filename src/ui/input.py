@@ -13,6 +13,7 @@ from supervisely.app.widgets import (
     Input,
     Flexbox,
     Field,
+    Progress,
 )
 
 import src.globals as g
@@ -51,12 +52,15 @@ file_loaded_info = Text(
 )
 file_loaded_info.hide()
 
+loading_progress = Progress()
+loading_progress.hide()
+
 # Message which is shown after the connection check.
 check_result = Text()
 check_result.hide()
 
 assets_tab_container = Container(
-    [key_field, buttons_flexbox, file_loaded_info, check_result]
+    [key_field, buttons_flexbox, file_loaded_info, check_result, loading_progress]
 )
 
 project_tab_container = Container(
@@ -144,12 +148,22 @@ def load_data():
     sly.logger.debug("Starting to prepare the data for the app.")
 
     if g.STATE.assets_api:
+        check_key_button.text = "Loading data..."
+
         sly.logger.info(
             "The app is working with the Assets primitives with provided API key."
         )
         settings.classes_table.hide()
         read_assets()
-        settings.load_assets()
+
+        loading_progress.show()
+
+        with loading_progress(
+            message="Loading assets categories...", total=len(g.STATE.ASSETS.data)
+        ) as pbar:
+            settings.load_assets(pbar)
+
+        check_key_button.text = "Check connection"
 
     else:
         sly.logger.info("The app is working with the Supervisely project.")
@@ -199,16 +213,16 @@ def clean_static_dir():
 
 
 @change_project_button.click
-def handle_input():
-    """Handles the change project button click event. Enabling the project selector
-    and the load button, hiding the change project button.
-    """
+def change_project():
     select_project.enable()
     load_button.show()
     change_project_button.hide()
     input_tabs.enable()
     project_thumbnail.hide()
     g.STATE.selected_project = None
+
+    settings.card.lock()
+    settings.card.collapse()
 
 
 @check_key_button.click
@@ -247,9 +261,6 @@ def connect_to_assets():
 
         input_tabs.set_active_tab("Assets")
 
-    else:
-        change_key_button.show()
-
     input_tabs.disable()
 
     check_result.text = f"Successfully connected to: {g.ASSETS_ADDRESS}"
@@ -258,9 +269,12 @@ def connect_to_assets():
 
     # Disabling fields for entering API key if the connection was successful.
     key_input.disable()
-    check_key_button.hide()
 
     load_data()
+    check_key_button.hide()
+
+    if not g.STATE.from_team_files:
+        change_key_button.show()
 
 
 @change_key_button.click
@@ -272,6 +286,12 @@ def change_key():
 
     check_key_button.show()
     change_key_button.hide()
+
+    settings.card.lock()
+    settings.card.collapse()
+
+    g.STATE.assets_api_key = None
+    g.STATE.assets_api = None
 
 
 g.key_from_file()
