@@ -39,17 +39,17 @@ For example, if object on background image is labeled with bounding box and we c
 
 2. Add app from ecosystem to your team
 
-<img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/flying-objects" src="https://i.imgur.com/wxe0fR7.png" width="300"/>   
+<img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/flying-objects" src="media/u2.png" width="300"/>   
 
 3. Label foregrounds with polygons or masks. You can use demo images from project [`Seeds`](https://ecosystem.supervise.ly/projects/seeds) from Ecosystem
 
-<img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/seeds" src="https://i.imgur.com/E5xmBRH.png" width="300"/>   
+<img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/seeds" src="media/u3.png" width="300"/>   
 
 4. Prepare backgrounds - it is a project or dataset with background images. You can use dataset `01_backgrounds` from project `Seeds` as example
 
 5. Run app from the context menu of project with labeled foregrounds:
 
-<img src="https://i.imgur.com/6i0Z8Nm.png"/>
+<img src="media/u5.png"/>
 
 6. Generate synthetic data with different settings and save experiments results to different projects / datasets.
 
@@ -60,10 +60,10 @@ For example, if object on background image is labeled with bounding box and we c
 
 
 <a data-key="sly-embeded-video-link" href="https://youtu.be/DazA1SSQOK8" data-video-code="DazA1SSQOK8">
-    <img src="https://i.imgur.com/TDGyy1E.png" alt="SLY_EMBEDED_VIDEO_LINK"  style="max-width:100%;">
+    <img src="media/d.png" alt="SLY_EMBEDED_VIDEO_LINK"  style="max-width:100%;">
 </a>
 
 # Screenshots
 
-<img src="https://i.imgur.com/izY9tR7.png"/>
+<img src="media/s1.png"/>
 
