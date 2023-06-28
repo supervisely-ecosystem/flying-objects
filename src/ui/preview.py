@@ -188,7 +188,9 @@ def synthesize():
 
         sly.logger.debug(f"Generated label foreground for image {image_id}.")
 
-        label_img, label_mask = aug.apply_to_foreground(label_img, label_mask)
+        label_img, label_mask = aug.apply_to_foreground(
+            label_img, label_mask, class_name
+        )
 
         sly.logger.debug(f"Applied foreground augmentations for image {image_id}.")
 

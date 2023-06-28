@@ -12,7 +12,7 @@ AUGS_FILE = os.path.join(ABSOLUTE_PATH, "augs.yaml")
 # Local path to the .env file, if the app is started from the team files.
 ENV_FILE = "assets.env"
 
-ASSETS_ADDRESS = "https://assets.supervise.ly/"
+ASSETS_ADDRESS = "https://assets.supervisely.com"
 WEB_ADDRESS = "https://ecosystem.supervisely.com/primitives/assets/"
 ASSETS_TEAM = "primitives"
 ASSETS_TEAM_ID = 3
@@ -58,6 +58,7 @@ class State:
 
             self.selected_classes = None
             self.augmentations = None
+            self.advanced_options = None
 
             self.task_type = None
             self.random_colors = None
@@ -102,7 +103,7 @@ class State:
         self.image_infos = {}
 
         self.aug_color_fg = None
-        self.aug_spacial_fg = None
+        self.aug_spacial_fg = {}
 
         self.continue_generation = True
 

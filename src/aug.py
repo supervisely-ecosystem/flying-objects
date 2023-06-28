@@ -29,7 +29,34 @@ def init_fg_augs():
 
     settings = g.STATE.SETTINGS.augmentations
     init_color_augs(settings["objects"]["augs"]["color"])
-    init_spacial_augs(settings["objects"]["augs"]["spacial"])
+
+    sly.logger.debug(
+        "Will try to initialize spacial augs for each selected class (or primitive)."
+    )
+    if g.STATE.SETTINGS.use_assets:
+        # If working with assets, the selected primitives is a dictionary with workspace names as keys, and lists of
+        # primitive names as values.
+        class_names = g.STATE.ASSETS.class_names
+
+    else:
+        # If working with Supervisely project, the selected classes is a list of class names.
+        class_names = g.STATE.SETTINGS.selected_classes
+
+    sly.logger.debug(
+        f"Prepared list of class names for spacial augs for each class: {class_names}"
+    )
+
+    base_spacial_augs = settings["objects"]["augs"]["spacial"]
+
+    for class_name in class_names:
+        data = base_spacial_augs.copy()
+
+        if g.STATE.SETTINGS.advanced_options:
+            data["Resize"] = g.STATE.SETTINGS.advanced_options["options"]["resizes"][
+                class_name.replace("_mask", "")
+            ]["Resize"]
+
+        init_spacial_augs(class_name, data)
 
     sly.logger.debug("Foreground augmentations initialized.")
 
@@ -47,7 +74,7 @@ def init_color_augs(data):
     sly.logger.debug("Foreground color augmentations initialized.")
 
 
-def init_spacial_augs(data):
+def init_spacial_augs(class_name, data):
     augs = []
     for key, value in data.items():
         if key == "ElasticTransformation":
@@ -68,12 +95,12 @@ def init_spacial_augs(data):
         else:
             a = name_func_spacial[key](parsed_value)
         augs.append(a)
-    g.STATE.aug_spacial_fg = iaa.Sequential(augs, random_order=True)
+    g.STATE.aug_spacial_fg[class_name] = iaa.Sequential(augs, random_order=True)
 
     sly.logger.debug("Foreground spacial augmentations initialized.")
 
 
-def apply_to_foreground(image, mask):
+def apply_to_foreground(image, mask, class_name):
     if image.shape[:2] != mask.shape[:2]:
         raise ValueError(
             f"Image ({image.shape}) and mask ({mask.shape}) have different resolutions"
@@ -86,7 +113,7 @@ def apply_to_foreground(image, mask):
 
     # apply spacial augs
     segmap = SegmentationMapsOnImage(mask_aug, shape=mask_aug.shape)
-    image_aug, segmap_aug = g.STATE.aug_spacial_fg(
+    image_aug, segmap_aug = g.STATE.aug_spacial_fg[class_name](
         image=image_aug, segmentation_maps=segmap
     )
     mask_aug = segmap_aug.get_arr()

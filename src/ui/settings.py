@@ -4,6 +4,7 @@ import yaml
 import urllib.parse
 
 from collections import defaultdict
+from typing import List, Dict, Union
 
 from supervisely.app.widgets import (
     Card,
@@ -58,8 +59,25 @@ classes_collapse = Collapse(labels=["test"], contents=["test"])
 classes_tab_container = Container([classes_table, classes_collapse])
 
 
-augmentations_tab = Editor(
+augmentations_editor = Editor(
     initial_text=g.STATE.augs, language_mode="yaml", height_lines=25
+)
+
+advanced_options_checkbox = Checkbox("Advanced mode")
+advanced_options_field = Field(
+    title="Use advanced augmentation options",
+    description="You can set custom class distribution and size ranges for each class.",
+    content=advanced_options_checkbox,
+)
+advanced_options_editor = Editor(language_mode="yaml", height_lines=25)
+advanced_options_editor.hide()
+
+augmentations_tab_containter = Container(
+    widgets=[
+        advanced_options_field,
+        advanced_options_editor,
+        augmentations_editor,
+    ]
 )
 
 output_task_type = RadioGroup(
@@ -91,7 +109,7 @@ settings_tabs = Tabs(
     [
         background_tab_container,
         classes_tab_container,
-        augmentations_tab,
+        augmentations_tab_containter,
         postprocessing_tab_container,
     ],
 )
@@ -113,7 +131,9 @@ widgets = [
     labels_mode_select,
     classes_table,
     classes_collapse,
-    augmentations_tab,
+    augmentations_editor,
+    advanced_options_checkbox,
+    advanced_options_editor,
     output_task_type,
     random_colors_checkbox,
 ]
@@ -168,53 +188,29 @@ def save_settings():
     g.STATE.SETTINGS.background_project_id = background_project_id
     sly.logger.debug(f"Selected project with backgrounds: {background_project_id}")
 
-    if g.STATE.assets_api:
-        sly.logger.info(
-            "The app is working with Assets API, will try to read selected primitives."
+    selects = get_selected_classes()
+    if isinstance(selects, dict):
+        g.STATE.SETTINGS.use_assets = True
+        g.STATE.SETTINGS.selected_primitives = selects
+
+        sly.logger.debug(
+            f"Selected primitives: {selects}, the app in Assets mode: {g.STATE.SETTINGS.use_assets}"
         )
 
-        g.STATE.SETTINGS.use_assets = True
+    elif isinstance(selects, list):
+        g.STATE.SETTINGS.use_assets = False
+        g.STATE.SETTINGS.selected_classes = selects
 
-        selected_primitives = defaultdict(list)
-        for workspace, checkboxes in g.STATE.ASSETS.checkboxes.items():
-            for name, checkbox in checkboxes.items():
-                if checkbox.is_checked() and name != "all":
-                    selected_primitives[workspace].append(name)
-        if not selected_primitives:
-            error_text.text = "At least one item on class tab must be selected."
-            error_text.show()
-            sly.logger.warning("No primitives were selected, stopping function.")
-            settings_tabs.set_active_tab("Classes")
-            return
-
-        for checkboxes in g.STATE.ASSETS.checkboxes.values():
-            for checkbox in checkboxes.values():
-                checkbox.disable()
-
-        g.STATE.SETTINGS.selected_primitives = selected_primitives
-
-        sly.logger.info(
-            f"Following primitives (Category: [Class]) were selected: {selected_primitives} and saved in global state."
+        sly.logger.debug(
+            f"Selected classes: {selects}, the app in Assets mode: {g.STATE.SETTINGS.use_assets}"
         )
 
     else:
-        sly.logger.info("The app is working with Supervisely project.")
-
-        g.STATE.SETTINGS.use_assets = False
-
-        selected_classes = classes_table.get_selected_classes()
-        if not selected_classes:
-            error_text.text = "At least one item on class tab must be selected."
-            error_text.show()
-            sly.logger.warning("No classes were selected, stopping function.")
-            settings_tabs.set_active_tab("Classes")
-            return
-
-        g.STATE.SETTINGS.selected_classes = selected_classes
-
-        sly.logger.info(
-            f"Following classes were selected: {selected_classes} and saved in global state."
+        sly.logger.error(
+            f"Unexpected return type from get_selected_classes: {selects}. "
+            f"It expected to be list or dict, got {type(selects)}."
         )
+        return
 
     save_settings_button.text = "Applying..."
 
@@ -227,9 +223,14 @@ def save_settings():
         ]
 
     g.STATE.SETTINGS.label_mode = labels_mode_select.get_value()
-    augs = augmentations_tab.get_text()
+    augs = augmentations_editor.get_text()
     g.STATE.augs = augs if augs else None
     g.STATE.SETTINGS.augmentations = yaml.safe_load(augs)
+
+    advanced_options = advanced_options_editor.get_text()
+    g.STATE.SETTINGS.advanced_options = yaml.safe_load(advanced_options)
+
+    print(g.STATE.SETTINGS.advanced_options)
 
     sly.logger.debug(f"Readed augmentations: {g.STATE.SETTINGS.augmentations}.")
 
@@ -512,3 +513,76 @@ def download_assets():
     g.STATE.project_meta = res_project_meta
 
     sly.logger.info("Successfully merged meta from all selected projects in assets.")
+
+
+@advanced_options_checkbox.value_changed
+def advanced_options_handler(checked):
+    if checked:
+        selects = get_selected_classes()
+        if not selects:
+            advanced_options_checkbox.uncheck()
+            return
+
+        resizes = ""
+        if isinstance(selects, dict):
+            for workspace in selects:
+                primitives = selects[workspace]
+                for primitive in primitives:
+                    resizes += f"    {primitive}:\n      Resize: (0.8, 1.5)\n"
+        elif isinstance(selects, list):
+            for class_name in selects:
+                resizes += f"    {class_name}:\n      Resize: (0.8, 1.5)\n"
+
+        advanced_options = "options:\n  resizes:\n" + resizes
+
+        advanced_options_editor.set_text(advanced_options)
+        advanced_options_editor.show()
+
+    else:
+        advanced_options_editor.hide()
+
+
+def get_selected_classes() -> Union[Dict[str, List[str]], List[str]]:
+    sly.logger.debug("Trying to read selected classes or primitives.")
+
+    if g.STATE.assets_api:
+        sly.logger.info(
+            "The app is working with Assets API, will try to read selected primitives."
+        )
+
+        selected_primitives = defaultdict(list)
+        for workspace, checkboxes in g.STATE.ASSETS.checkboxes.items():
+            for name, checkbox in checkboxes.items():
+                if checkbox.is_checked() and name != "all":
+                    selected_primitives[workspace].append(name)
+        if not selected_primitives:
+            error_text.text = "At least one item on class tab must be selected."
+            error_text.show()
+            sly.logger.warning("No primitives were selected, stopping function.")
+            settings_tabs.set_active_tab("Classes")
+            return
+
+        for checkboxes in g.STATE.ASSETS.checkboxes.values():
+            for checkbox in checkboxes.values():
+                checkbox.disable()
+
+        sly.logger.info(
+            f"Following primitives (Category: [Class]) were selected: {selected_primitives}."
+        )
+
+        return selected_primitives
+
+    else:
+        sly.logger.info("The app is working with Supervisely project.")
+
+        selected_classes = classes_table.get_selected_classes()
+        if not selected_classes:
+            error_text.text = "At least one item on class tab must be selected."
+            error_text.show()
+            sly.logger.warning("No classes were selected, stopping function.")
+            settings_tabs.set_active_tab("Classes")
+            return
+
+        sly.logger.info(f"Following classes were selected: {selected_classes}.")
+
+        return selected_classes
