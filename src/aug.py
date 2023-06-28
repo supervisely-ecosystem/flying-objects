@@ -54,7 +54,7 @@ def init_fg_augs():
         if g.STATE.SETTINGS.advanced_options:
             data["Resize"] = g.STATE.SETTINGS.advanced_options["options"]["resizes"][
                 class_name.replace("_mask", "")
-            ]["Resize"]
+            ]
 
         init_spacial_augs(class_name, data)
 

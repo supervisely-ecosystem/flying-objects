@@ -69,13 +69,19 @@ advanced_options_field = Field(
     description="You can set custom class distribution and size ranges for each class.",
     content=advanced_options_checkbox,
 )
-advanced_options_editor = Editor(language_mode="yaml", height_lines=25)
+advanced_options_editor = Editor(language_mode="yaml", height_lines=40)
 advanced_options_editor.hide()
+
+advanced_options_text = Text(
+    "Advanced options will override the settings above.", status="info"
+)
+advanced_options_text.hide()
 
 augmentations_tab_containter = Container(
     widgets=[
         advanced_options_field,
         advanced_options_editor,
+        advanced_options_text,
         augmentations_editor,
     ]
 )
@@ -324,6 +330,8 @@ def load_assets(pbar=None):
 
             @all_checkbox.value_changed
             def handle_checkboxes(check):
+                advanced_options_editor.hide()
+                advanced_options_checkbox.uncheck()
                 if check:
                     for checkbox in g.STATE.ASSETS.checkboxes[workspace].values():
                         checkbox.check()
@@ -335,6 +343,8 @@ def load_assets(pbar=None):
 
             @checkbox.value_changed
             def handle_checkbox(check):
+                advanced_options_editor.hide()
+                advanced_options_checkbox.uncheck()
                 if not check:
                     g.STATE.ASSETS.checkboxes[workspace]["all"].uncheck()
                 else:
@@ -518,31 +528,57 @@ def download_assets():
 @advanced_options_checkbox.value_changed
 def advanced_options_handler(checked):
     if checked:
-        selects = get_selected_classes()
-        if not selects:
-            advanced_options_checkbox.uncheck()
-            return
-
-        resizes = ""
-        if isinstance(selects, dict):
-            for workspace in selects:
-                primitives = selects[workspace]
-                for primitive in primitives:
-                    resizes += f"    {primitive}:\n      Resize: (0.8, 1.5)\n"
-        elif isinstance(selects, list):
-            for class_name in selects:
-                resizes += f"    {class_name}:\n      Resize: (0.8, 1.5)\n"
-
-        advanced_options = "options:\n  resizes:\n" + resizes
-
-        advanced_options_editor.set_text(advanced_options)
+        build_advanced_options()
+        advanced_options_text.show()
         advanced_options_editor.show()
-
     else:
+        advanced_options_text.hide()
         advanced_options_editor.hide()
 
 
-def get_selected_classes() -> Union[Dict[str, List[str]], List[str]]:
+def build_advanced_options():
+    selects = get_selected_classes(lock=False)
+    if not selects:
+        advanced_options_checkbox.uncheck()
+        return
+
+    resizes = ""
+    distributions = ""
+    if isinstance(selects, dict):
+        class_names = [
+            class_name for class_names in selects.values() for class_name in class_names
+        ]
+
+    elif isinstance(selects, list):
+        class_names = selects
+
+    parts = distribute_percentages(len(class_names))
+    for class_name, part in zip(class_names, parts):
+        resizes += f"    {class_name}: (0.8, 1.5)\n"
+        distributions += f"    {class_name}: {part}\n"
+
+    advanced_options = (
+        "options:\n"
+        "  total_objects_count: [1, 5] # total number of objects (range) per image\n"
+        f"  distributions: # percent of images from total objects count for each class\n{distributions}"
+        f"  resizes: # resize range for each class\n{resizes}"
+    )
+    advanced_options_editor.set_text(advanced_options)
+
+
+def distribute_percentages(num_parts: int):
+    quotient = 100 // num_parts
+    remainder = 100 % num_parts
+
+    parts = [quotient] * num_parts
+
+    for i in range(remainder):
+        parts[i] += 1
+
+    return parts
+
+
+def get_selected_classes(lock: bool = True) -> Union[Dict[str, List[str]], List[str]]:
     sly.logger.debug("Trying to read selected classes or primitives.")
 
     if g.STATE.assets_api:
@@ -562,9 +598,10 @@ def get_selected_classes() -> Union[Dict[str, List[str]], List[str]]:
             settings_tabs.set_active_tab("Classes")
             return
 
-        for checkboxes in g.STATE.ASSETS.checkboxes.values():
-            for checkbox in checkboxes.values():
-                checkbox.disable()
+        if lock:
+            for checkboxes in g.STATE.ASSETS.checkboxes.values():
+                for checkbox in checkboxes.values():
+                    checkbox.disable()
 
         sly.logger.info(
             f"Following primitives (Category: [Class]) were selected: {selected_primitives}."

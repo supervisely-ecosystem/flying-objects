@@ -1,6 +1,7 @@
 import os
 import secrets
 
+from math import ceil
 from random import choice, randint, shuffle
 from collections import defaultdict
 
@@ -95,11 +96,29 @@ def synthesize():
     res_image = background_image_np.copy()
 
     res_classes = []
-    to_generate = []
+
     for class_name in class_names:
         original_class = g.STATE.project_meta.get_obj_class(class_name)
         res_classes.append(original_class.clone(geometry_type=sly.Bitmap))
 
+    to_generate = []
+
+    if g.STATE.SETTINGS.advanced_options:
+        total_objects_count = randint(
+            *g.STATE.SETTINGS.advanced_options["options"]["total_objects_count"]
+        )
+
+        distributions = g.STATE.SETTINGS.advanced_options["options"]["distributions"]
+
+        for class_name, distribution in distributions.items():
+            print(total_objects_count, type(total_objects_count))
+            print(distribution, type(distribution))
+
+            repeats = ceil(total_objects_count * distribution / 100)
+            for _ in range(repeats):
+                to_generate.append(f"{class_name}_mask")
+
+    else:
         count = randint(*g.STATE.SETTINGS.augmentations["objects"]["count"])
         for i in range(count):
             to_generate.append(class_name)
