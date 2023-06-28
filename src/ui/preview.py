@@ -111,17 +111,18 @@ def synthesize():
         distributions = g.STATE.SETTINGS.advanced_options["options"]["distributions"]
 
         for class_name, distribution in distributions.items():
-            print(total_objects_count, type(total_objects_count))
-            print(distribution, type(distribution))
-
             repeats = ceil(total_objects_count * distribution / 100)
             for _ in range(repeats):
-                to_generate.append(f"{class_name}_mask")
+                if g.STATE.SETTINGS.use_assets:
+                    to_generate.append(f"{class_name}_mask")
+                else:
+                    to_generate.append(class_name)
 
     else:
-        count = randint(*g.STATE.SETTINGS.augmentations["objects"]["count"])
-        for i in range(count):
-            to_generate.append(class_name)
+        for class_name in class_names:
+            count = randint(*g.STATE.SETTINGS.augmentations["objects"]["count"])
+            for i in range(count):
+                to_generate.append(class_name)
 
     shuffle(to_generate)
 

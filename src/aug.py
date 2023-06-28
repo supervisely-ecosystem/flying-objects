@@ -52,9 +52,14 @@ def init_fg_augs():
         data = base_spacial_augs.copy()
 
         if g.STATE.SETTINGS.advanced_options:
-            data["Resize"] = g.STATE.SETTINGS.advanced_options["options"]["resizes"][
-                class_name.replace("_mask", "")
-            ]
+            if g.STATE.SETTINGS.use_assets:
+                data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
+                    "resizes"
+                ][class_name.replace("_mask", "")]
+            else:
+                data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
+                    "resizes"
+                ][class_name]
 
         init_spacial_augs(class_name, data)
 

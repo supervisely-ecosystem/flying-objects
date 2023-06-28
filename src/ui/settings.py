@@ -236,8 +236,6 @@ def save_settings():
     advanced_options = advanced_options_editor.get_text()
     g.STATE.SETTINGS.advanced_options = yaml.safe_load(advanced_options)
 
-    print(g.STATE.SETTINGS.advanced_options)
-
     sly.logger.debug(f"Readed augmentations: {g.STATE.SETTINGS.augmentations}.")
 
     g.STATE.SETTINGS.task_type = output_task_type.get_value()
@@ -332,6 +330,7 @@ def load_assets(pbar=None):
             def handle_checkboxes(check):
                 advanced_options_editor.hide()
                 advanced_options_checkbox.uncheck()
+                g.STATE.SETTINGS.advanced_options = None
                 if check:
                     for checkbox in g.STATE.ASSETS.checkboxes[workspace].values():
                         checkbox.check()
@@ -345,6 +344,7 @@ def load_assets(pbar=None):
             def handle_checkbox(check):
                 advanced_options_editor.hide()
                 advanced_options_checkbox.uncheck()
+                g.STATE.SETTINGS.advanced_options = None
                 if not check:
                     g.STATE.ASSETS.checkboxes[workspace]["all"].uncheck()
                 else:
@@ -533,12 +533,15 @@ def advanced_options_handler(checked):
     else:
         advanced_options_text.hide()
         advanced_options_editor.hide()
+        g.STATE.SETTINGS.advanced_options = None
 
 
 def build_advanced_options():
     selects = get_selected_classes(lock=False)
     if not selects:
         advanced_options_checkbox.uncheck()
+        advanced_options_editor.hide()
+        g.STATE.SETTINGS.advanced_options = None
         return
 
     resizes = ""
