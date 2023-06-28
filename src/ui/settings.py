@@ -54,7 +54,7 @@ background_tab_container = Container(
 classes_table = ClassesTable()
 classes_table.hide()
 
-classes_collapse = Collapse(labels=["test"], contents=["test"])
+classes_collapse = Collapse()
 
 classes_tab_container = Container([classes_table, classes_collapse])
 
@@ -398,6 +398,7 @@ def load_assets(pbar=None):
 
         collapse_items.append(
             Collapse.Item(
+                name=workspace,
                 title=workspace,
                 content=grid,
             )
@@ -415,9 +416,7 @@ def load_assets(pbar=None):
         f"Tring to add {len(collapse_items)} collapse items to collapse widget."
     )
 
-    classes_collapse._items = collapse_items
-    classes_collapse.update_data()
-    classes_collapse.update_state()
+    classes_collapse.set_items(collapse_items)
     classes_collapse.loading = False
     classes_collapse.show()
 
