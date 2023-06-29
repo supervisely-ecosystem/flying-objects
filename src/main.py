@@ -10,4 +10,4 @@ import src.ui.output as output
 
 layout = Container(widgets=[input.card, settings.card, preview.card, output.card])
 
-app = sly.Application(layout=layout, static_dir=g.STATIC_DIR)
+app = sly.Application(layout=layout, static_dir=g.STATIC_DIR, hot_reload=True)
