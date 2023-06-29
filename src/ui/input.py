@@ -194,8 +194,6 @@ def read_assets():
         f"Succesfully read {len(workspaces)} workspaces in {team_info.name}."
     )
 
-    workspaces = workspaces[:2]
-
     for workspace in workspaces:
         project_list = sorted(
             g.STATE.assets_api.project.get_list(workspace.id), key=lambda x: x.name
