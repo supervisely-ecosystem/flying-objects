@@ -27,6 +27,7 @@ from supervisely.app.widgets import (
 )
 
 import src.globals as g
+import src.main as main
 import src.ui.preview as preview
 import src.ui.output as output
 
@@ -317,7 +318,6 @@ def change_settings():
 
 
 def load_assets(pbar=None):
-    classes_collapse.loading = True
     sly.logger.debug("Starting to load data from Assets and creating checkboxes.")
     collapse_items = []
 
@@ -417,8 +417,8 @@ def load_assets(pbar=None):
     )
 
     classes_collapse.set_items(collapse_items)
-    classes_collapse.loading = False
     classes_collapse.show()
+    main.app.reload_page()
 
     sly.logger.info("Successfully loaded data from Assets and updated collapse widget.")
 
