@@ -22,12 +22,12 @@ from supervisely.app.widgets import (
     Text,
     Flexbox,
     Collapse,
+    ReloadableArea,
     Grid,
     Progress,
 )
 
 import src.globals as g
-import src.main as main
 import src.ui.preview as preview
 import src.ui.output as output
 
@@ -56,8 +56,9 @@ classes_table = ClassesTable()
 classes_table.hide()
 
 classes_collapse = Collapse()
+classes_ra = ReloadableArea(content=classes_collapse)
 
-classes_tab_container = Container([classes_table, classes_collapse])
+classes_tab_container = Container([classes_table, classes_ra])
 
 
 augmentations_editor = Editor(
@@ -418,7 +419,7 @@ def load_assets(pbar=None):
 
     classes_collapse.set_items(collapse_items)
     classes_collapse.show()
-    main.app.reload_page()
+    classes_ra.reload()
 
     sly.logger.info("Successfully loaded data from Assets and updated collapse widget.")
 

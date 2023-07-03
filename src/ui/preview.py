@@ -114,7 +114,7 @@ def synthesize():
             repeats = ceil(total_objects_count * distribution / 100)
             for _ in range(repeats):
                 if g.STATE.SETTINGS.use_assets:
-                    to_generate.append(f"{class_name}_mask")
+                    to_generate.append(f"{class_name.replace(' ', '_')}_mask")
                 else:
                     to_generate.append(class_name)
 
@@ -174,10 +174,16 @@ def synthesize():
 
     for idx, class_name in enumerate(to_generate, start=1):
         if class_name not in g.STATE.labels:
-            sly.logger.debug(
-                f"Class {class_name} can't be found in global state labels and will be skipped."
-            )
-            continue
+            if class_name.lower() in g.STATE.labels:
+                class_name = class_name.lower()
+                sly.logger.info(
+                    f"Changed class name to {class_name} because it was found in global state labels."
+                )
+            else:
+                sly.logger.debug(
+                    f"Class {class_name} can't be found in global state labels and will be skipped."
+                )
+                continue
 
         image_id = choice(list(g.STATE.labels[class_name].keys()))
         label = choice(g.STATE.labels[class_name][image_id])

@@ -53,9 +53,19 @@ def init_fg_augs():
 
         if g.STATE.SETTINGS.advanced_options:
             if g.STATE.SETTINGS.use_assets:
-                data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
-                    "resizes"
-                ][class_name.replace("_mask", "")]
+                class_name_options = class_name.replace("_mask", "").replace("_", " ")
+                try:
+                    data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
+                        "resizes"
+                    ][class_name_options]
+                except KeyError:
+                    sly.logger.warning(
+                        f"Can't find class with name {class_name_options} in "
+                        "advanced options, will try to capitalize it."
+                    )
+                    data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
+                        "resizes"
+                    ][class_name_options.capitalize()]
             else:
                 data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
                     "resizes"
