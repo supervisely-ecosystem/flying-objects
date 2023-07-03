@@ -75,7 +75,7 @@ advanced_options_editor = Editor(language_mode="yaml", height_lines=40)
 advanced_options_editor.hide()
 
 advanced_options_text = Text(
-    "Advanced options will override the settings above.", status="info"
+    "Advanced options will override the settings below.", status="info"
 )
 advanced_options_text.hide()
 
