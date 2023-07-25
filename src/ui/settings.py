@@ -3,8 +3,6 @@ import supervisely as sly
 import yaml
 import urllib.parse
 
-from collections import defaultdict
-from typing import List, Dict, Union
 
 from supervisely.app.widgets import (
     Card,
