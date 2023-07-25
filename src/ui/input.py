@@ -1,6 +1,8 @@
 import os
 import requests
 
+from collections import namedtuple
+
 import supervisely as sly
 from supervisely.app.widgets import (
     Card,
@@ -16,10 +18,23 @@ from supervisely.app.widgets import (
     Progress,
 )
 
+
 import src.globals as g
 import src.ui.settings as settings
 import src.ui.preview as preview
 import src.ui.output as output
+
+Primitive = namedtuple(
+    "Primitive",
+    [
+        "workspace_id",
+        "workspace_name",
+        "project_id",
+        "project_name",
+        "name",
+        "widget_name",
+    ],
+)
 
 select_project = SelectProject(workspace_id=g.STATE.selected_workspace)
 
@@ -55,7 +70,6 @@ file_loaded_info = Text(
 file_loaded_info.hide()
 
 loading_progress = Progress()
-loading_progress.hide()
 
 # Message which is shown after the connection check.
 check_result = Text()
@@ -158,8 +172,6 @@ def load_data():
         settings.classes_table.hide()
         read_assets()
 
-        loading_progress.show()
-
         with loading_progress(
             message="Loading assets categories...", total=len(g.STATE.ASSETS.data)
         ) as pbar:
@@ -191,17 +203,68 @@ def read_assets():
     )
 
     sly.logger.info(
-        f"Succesfully read {len(workspaces)} workspaces in {team_info.name}."
+        f"Succesfully read {len(workspaces)} workspaces in {team_info.name}. Starting iteration..."
     )
 
-    for workspace in workspaces:
-        project_list = sorted(
-            g.STATE.assets_api.project.get_list(workspace.id), key=lambda x: x.name
-        )
-        g.STATE.ASSETS.data[workspace.name] = project_list
+    # ! debug slice, delete in production
+
+    workspaces = workspaces[:1]
+
+    # ! DELETE IT!
+
+    with loading_progress(
+        message="Retrieving list of primitives...", total=len(workspaces)
+    ) as pbar:
+        for workspace in workspaces:
+            projects = sorted(
+                g.STATE.assets_api.project.get_list(workspace.id), key=lambda x: x.name
+            )
+
+            workspace_data = []
+
+            for project in projects:
+                project_meta = sly.ProjectMeta.from_json(
+                    g.STATE.assets_api.project.get_meta(project.id)
+                )
+
+                project_info = g.STATE.assets_api.project.get_info_by_id(project.id)
+                primitives = []
+
+                for obj_class in project_meta.obj_classes:
+                    class_name = obj_class.name
+                    if class_name.endswith("_mask"):
+                        widget_name = class_name.replace("_mask", "")
+                    else:
+                        widget_name = class_name
+
+                    primitive = Primitive(
+                        workspace.id,
+                        workspace.name,
+                        project.id,
+                        project.name,
+                        class_name,
+                        widget_name,
+                    )
+
+                    primitives.append(primitive)
+
+                project_data = {
+                    "project_info": project_info,
+                    "primitives": primitives,
+                }
+
+                workspace_data.append(project_data)
+
+            sly.logger.debug(
+                f"Successfully read {len(workspace_data)} primitives for {workspace.name}."
+            )
+
+            g.STATE.ASSETS.data[workspace.name] = workspace_data
+
+            pbar.update(1)
 
     sly.logger.info(
-        "Successfully read all projects from Assets primitives and saved them in global state."
+        f"Successfully read {len(g.STATE.ASSETS.data)} workspaces with primitives and saved them to the state."
     )
 
 

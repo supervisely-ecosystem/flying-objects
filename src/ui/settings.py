@@ -364,50 +364,62 @@ def load_assets(pbar=None):
                             return
                     g.STATE.ASSETS.checkboxes[workspace]["all"].check()
 
-    for workspace, project_infos in g.STATE.ASSETS.data.items():
+    sly.logger.debug(
+        f"Readed {len(g.STATE.ASSETS.data)} workspaces on Assets from global state, starting to create checkboxes."
+    )
+
+    for workspace_name, workspace_data in g.STATE.ASSETS.data.items():
         all_checkbox = Checkbox("All")
         checkboxes = {"all": all_checkbox}
 
-        sly.logger.debug(
-            f"Trying to create {len(project_infos)} checkboxes for {workspace} workspace."
-        )
+        sly.logger.debug(f"Creating checkboxes for {workspace_name} workspace.")
 
-        for project_info in project_infos:
+        for project_data in workspace_data:
+            project_info = project_data["project_info"]
             project_stats = g.STATE.assets_api.project.get_stats(project_info.id)
-            object_count = project_stats["objects"]["total"]["objectsInDataset"]
+            primitives = project_data["primitives"]
 
-            if object_count == 0:
-                continue
-            primitive_url = (
-                g.WEB_ADDRESS
-                + f"{urllib.parse.quote(project_info.name).lower()}-{project_info.id}/"
-            )
+            for primitive in primitives:
+                class_stats = project_stats["objects"]["items"]
 
-            text = Text(
-                f"{project_info.name} <a href='{primitive_url}'>({object_count})</a>"
-            )
+                objects_count = None
 
-            checkbox = Checkbox(text)
-            checkboxes[project_info.name] = checkbox
-            create_checkbox_handler(workspace, checkbox=checkbox)
+                for class_stat in class_stats:
+                    if class_stat["objectClass"]["name"] == primitive.name:
+                        objects_count = class_stat["total"]
+                        break
 
-        g.STATE.ASSETS.checkboxes[workspace] = checkboxes
+                if not objects_count:
+                    continue
 
-        create_checkbox_handler(workspace, all_checkbox=all_checkbox)
+                primitive_url = (
+                    g.WEB_ADDRESS
+                    + f"{urllib.parse.quote(project_info.name).lower()}-{project_info.id}/"
+                )
+
+                text = Text(
+                    f"{primitive.widget_name} <a href='{primitive_url}'>({objects_count})</a>"
+                )
+
+                checkbox = Checkbox(text)
+                checkboxes[primitive.name] = checkbox
+                create_checkbox_handler(workspace_name, checkbox=checkbox)
+
+        g.STATE.ASSETS.checkboxes[workspace_name] = checkboxes
+
+        create_checkbox_handler(workspace_name, all_checkbox=all_checkbox)
 
         grid = Grid(columns=5, widgets=list(checkboxes.values()))
 
         collapse_items.append(
             Collapse.Item(
-                name=workspace,
-                title=workspace,
+                name=workspace_name,
+                title=workspace_name,
                 content=grid,
             )
         )
 
-        sly.logger.debug(
-            f"Succesfully created {len(project_infos)} checkboxes and added them to collapse items."
-        )
+        sly.logger.debug(f"Created checkboxes for {workspace_name} workspace.")
 
         if pbar:
             pbar.update(1)
