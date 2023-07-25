@@ -235,6 +235,8 @@ def read_assets():
                     else:
                         widget_name = class_name
 
+                    widget_name = widget_name.replace("_", " ")
+
                     primitive = Primitive(
                         workspace.id,
                         workspace.name,

@@ -169,11 +169,12 @@ def create_project(project_name: Optional[str]) -> int:
     if not project_name:
         sly.logger.info("Project name is not specified, will generate it.")
         if g.STATE.SETTINGS.use_assets:
-            primitive_names = []
-            for primitives in g.STATE.SETTINGS.selected_primitives.values():
-                primitive_names.extend(primitives)
-                if len(primitive_names) >= 3:
-                    break
+            primitive_names = [
+                primitive.widget_name
+                for primitive in g.STATE.SETTINGS.selected_primitives
+            ]
+            if len(primitive_names) > 3:
+                primitive_names = primitive_names[:3]
 
             primitive_names = ", ".join(primitive_names[:3])
             project_name = f"synthetic {primitive_names}"
