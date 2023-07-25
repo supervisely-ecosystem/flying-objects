@@ -67,9 +67,20 @@ def init_fg_augs():
                         "resizes"
                     ][class_name_options.capitalize()]
             else:
-                data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
-                    "resizes"
-                ][class_name]
+                try:
+                    data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
+                        "resizes"
+                    ][class_name]
+                except KeyError:
+                    sly.logger.warning(
+                        f"Class with name {class_name} not found in advanced options editor."
+                    )
+
+                    raise KeyError(
+                        f"Class with name {class_name} not found in advanced options editor. "
+                        "If you don't want to use this class, you should unselect it in the Classes tab. "
+                        "Otherwise it must be present in the advanced options editor."
+                    )
 
         init_spacial_augs(class_name, data)
 
