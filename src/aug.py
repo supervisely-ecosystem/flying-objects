@@ -34,12 +34,11 @@ def init_fg_augs():
         "Will try to initialize spacial augs for each selected class (or primitive)."
     )
     if g.STATE.SETTINGS.use_assets:
-        # If working with assets, the selected primitives is a dictionary with workspace names as keys, and lists of
-        # primitive names as values.
-        class_names = g.STATE.ASSETS.class_names
+        class_names = [
+            primitive.name for primitive in g.STATE.SETTINGS.selected_primitives
+        ]
 
     else:
-        # If working with Supervisely project, the selected classes is a list of class names.
         class_names = g.STATE.SETTINGS.selected_classes
 
     sly.logger.debug(
@@ -50,37 +49,21 @@ def init_fg_augs():
 
     for class_name in class_names:
         data = base_spacial_augs.copy()
-
         if g.STATE.SETTINGS.advanced_options:
-            if g.STATE.SETTINGS.use_assets:
-                class_name_options = class_name.replace("_mask", "").replace("_", " ")
-                try:
-                    data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
-                        "resizes"
-                    ][class_name_options]
-                except KeyError:
-                    sly.logger.warning(
-                        f"Can't find class with name {class_name_options} in "
-                        "advanced options, will try to capitalize it."
-                    )
-                    data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
-                        "resizes"
-                    ][class_name_options.capitalize()]
-            else:
-                try:
-                    data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
-                        "resizes"
-                    ][class_name]
-                except KeyError:
-                    sly.logger.warning(
-                        f"Class with name {class_name} not found in advanced options editor."
-                    )
+            try:
+                data["Resize"] = g.STATE.SETTINGS.advanced_options["options"][
+                    "resizes"
+                ][class_name]
+            except (KeyError, TypeError):
+                sly.logger.warning(
+                    f"Class with name {class_name} not found in advanced options editor."
+                )
 
-                    raise KeyError(
-                        f"Class with name {class_name} not found in advanced options editor. "
-                        "If you don't want to use this class, you should unselect it in the Classes tab. "
-                        "Otherwise it must be present in the advanced options editor."
-                    )
+                raise Exception(
+                    f"Class with name {class_name} not found in advanced options editor. "
+                    "If you don't want to use this class, you should unselect it in the Classes tab. "
+                    "Otherwise it must be present in the advanced options editor."
+                )
 
         init_spacial_augs(class_name, data)
 

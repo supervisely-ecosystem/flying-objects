@@ -74,11 +74,11 @@ class State:
             self.data = {}
             self.checkboxes = {}
             self.project_ids = []
-            self.class_names = []
+            # self.class_names = []
 
         def clear(self):
             self.project_ids = []
-            self.class_names = []
+            # self.class_names = []
 
     def __init__(self):
         self.SETTINGS = self.Settings()

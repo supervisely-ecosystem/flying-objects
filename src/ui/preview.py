@@ -88,7 +88,9 @@ def synthesize():
     )
 
     if g.STATE.SETTINGS.use_assets:
-        class_names = g.STATE.ASSETS.class_names
+        class_names = [
+            primitive.name for primitive in g.STATE.SETTINGS.selected_primitives
+        ]
 
     else:
         class_names = g.STATE.SETTINGS.selected_classes
@@ -110,13 +112,16 @@ def synthesize():
 
         distributions = g.STATE.SETTINGS.advanced_options["options"]["distributions"]
 
+        if not distributions:
+            raise RuntimeError(
+                "Advanced distribution settings are incorrect. Check that all selected classes "
+                "are presented in the Editor widget."
+            )
+
         for class_name, distribution in distributions.items():
             repeats = ceil(total_objects_count * distribution / 100)
             for _ in range(repeats):
-                if g.STATE.SETTINGS.use_assets:
-                    to_generate.append(f"{class_name.replace(' ', '_')}_mask")
-                else:
-                    to_generate.append(class_name)
+                to_generate.append(class_name)
 
     else:
         for class_name in class_names:
@@ -174,16 +179,10 @@ def synthesize():
 
     for idx, class_name in enumerate(to_generate, start=1):
         if class_name not in g.STATE.labels:
-            if class_name.lower() in g.STATE.labels:
-                class_name = class_name.lower()
-                sly.logger.info(
-                    f"Changed class name to {class_name} because it was found in global state labels."
-                )
-            else:
-                sly.logger.debug(
-                    f"Class {class_name} can't be found in global state labels and will be skipped."
-                )
-                continue
+            sly.logger.debug(
+                f"Class {class_name} can't be found in global state labels and will be skipped."
+            )
+            continue
 
         image_id = choice(list(g.STATE.labels[class_name].keys()))
         label = choice(g.STATE.labels[class_name][image_id])

@@ -197,7 +197,8 @@ def save_settings():
     sly.logger.debug(f"Selected project with backgrounds: {background_project_id}")
 
     selects = get_selected_classes()
-    if isinstance(selects, dict):
+
+    if g.STATE.assets_api:
         g.STATE.SETTINGS.use_assets = True
         g.STATE.SETTINGS.selected_primitives = selects
 
@@ -205,20 +206,13 @@ def save_settings():
             f"Selected primitives: {selects}, the app in Assets mode: {g.STATE.SETTINGS.use_assets}"
         )
 
-    elif isinstance(selects, list):
+    else:
         g.STATE.SETTINGS.use_assets = False
         g.STATE.SETTINGS.selected_classes = selects
 
         sly.logger.debug(
             f"Selected classes: {selects}, the app in Assets mode: {g.STATE.SETTINGS.use_assets}"
         )
-
-    else:
-        sly.logger.error(
-            f"Unexpected return type from get_selected_classes: {selects}. "
-            f"It expected to be list or dict, got {type(selects)}."
-        )
-        return
 
     save_settings_button.text = "Applying..."
 
@@ -494,43 +488,24 @@ def download_assets():
         f"Starting iteration over {len(g.STATE.SETTINGS.selected_primitives)} selected categories of primitives."
     )
 
-    for workspace_name, project_names in g.STATE.SETTINGS.selected_primitives.items():
-        workspace_info = g.STATE.assets_api.workspace.get_info_by_name(
-            g.ASSETS_TEAM_ID, workspace_name
+    for primitive in g.STATE.SETTINGS.selected_primitives:
+        if primitive.project_id not in g.STATE.ASSETS.project_ids:
+            g.STATE.ASSETS.project_ids.append(primitive.project_id)
+            sly.logger.debug(
+                f"Added project ID {primitive.project_id} for {primitive.name} to global state."
+            )
+
+    for project_id in g.STATE.ASSETS.project_ids:
+        project_meta = sly.ProjectMeta.from_json(
+            g.STATE.assets_api.project.get_meta(project_id)
         )
 
-        sly.logger.debug(f"Retrieved workspace info for {workspace_name}.")
+        if res_project_meta is None:
+            res_project_meta = project_meta
+        else:
+            res_project_meta = res_project_meta.merge(project_meta)
 
-        for project_name in project_names:
-            sly.logger.debug(
-                f"Working in workspace {workspace_name} and project {project_name}."
-            )
-
-            project_info = g.STATE.assets_api.project.get_info_by_name(
-                workspace_info.id, project_name
-            )
-            project_meta_json = g.STATE.assets_api.project.get_meta(project_info.id)
-            project_meta = sly.ProjectMeta.from_json(project_meta_json)
-
-            g.STATE.ASSETS.project_ids.append(project_info.id)
-            sly.logger.debug(
-                f"Added project ID {project_info.id} for {project_name} to global state."
-            )
-
-            class_names = [obj_class.name for obj_class in project_meta.obj_classes]
-            g.STATE.ASSETS.class_names.extend(class_names)
-
-            sly.logger.debug(
-                f"Added {class_names} to global state. "
-                f"Current number of classes in global state: {len(g.STATE.ASSETS.class_names)}."
-            )
-
-            if res_project_meta is None:
-                res_project_meta = project_meta
-            else:
-                res_project_meta = res_project_meta.merge(project_meta)
-
-            sly.logger.debug(f"Successfully merged meta for {project_name}.")
+        sly.logger.debug(f"Successfully merged meta for {project_id}.")
 
     g.STATE.project_meta = res_project_meta
 
@@ -559,12 +534,10 @@ def build_advanced_options():
 
     resizes = ""
     distributions = ""
-    if isinstance(selects, dict):
-        class_names = [
-            class_name for class_names in selects.values() for class_name in class_names
-        ]
+    if g.STATE.assets_api:
+        class_names = [primitive.name for primitive in selects]
 
-    elif isinstance(selects, list):
+    else:
         class_names = selects
 
     parts = distribute_percentages(len(class_names))
@@ -593,7 +566,7 @@ def distribute_percentages(num_parts: int):
     return parts
 
 
-def get_selected_classes(lock: bool = True) -> Union[Dict[str, List[str]], List[str]]:
+def get_selected_classes(lock: bool = True):
     sly.logger.debug("Trying to read selected classes or primitives.")
 
     if g.STATE.assets_api:
@@ -601,11 +574,12 @@ def get_selected_classes(lock: bool = True) -> Union[Dict[str, List[str]], List[
             "The app is working with Assets API, will try to read selected primitives."
         )
 
-        selected_primitives = defaultdict(list)
+        selected_primitives = []
         for workspace, checkboxes in g.STATE.ASSETS.checkboxes.items():
             for name, checkbox in checkboxes.items():
                 if checkbox.is_checked() and name != "all":
-                    selected_primitives[workspace].append(name)
+                    selected_primitives.append(get_primitive(workspace, name))
+
         if not selected_primitives:
             error_text.text = "At least one item on class tab must be selected."
             error_text.show()
@@ -638,3 +612,10 @@ def get_selected_classes(lock: bool = True) -> Union[Dict[str, List[str]], List[
         sly.logger.info(f"Following classes were selected: {selected_classes}.")
 
         return selected_classes
+
+
+def get_primitive(workspace_name, class_name):
+    for project_data in g.STATE.ASSETS.data[workspace_name]:
+        for primitive in project_data["primitives"]:
+            if primitive.name == class_name:
+                return primitive
