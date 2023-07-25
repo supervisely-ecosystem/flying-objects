@@ -28,6 +28,8 @@ CACHE_DIR = os.path.join(SLY_APP_DATA_DIR, "cache")
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
 
+MAX_WORKERS = os.cpu_count() * 2
+
 LABEL_MODES = {
     "Ignore labels": "ignore",
     "Merge with syntehtic labels": "merge",

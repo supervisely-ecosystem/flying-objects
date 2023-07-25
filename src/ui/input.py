@@ -1,6 +1,8 @@
 import os
 import requests
 
+from concurrent.futures import ThreadPoolExecutor
+
 from collections import namedtuple
 
 import supervisely as sly
@@ -206,18 +208,14 @@ def read_assets():
         f"Succesfully read {len(workspaces)} workspaces in {team_info.name}. Starting iteration..."
     )
 
-    # ! debug slice, delete in production
-
-    workspaces = workspaces[:1]
-
-    # ! DELETE IT!
-
     with loading_progress(
         message="Retrieving list of primitives...", total=len(workspaces)
     ) as pbar:
-        for workspace in workspaces:
+
+        def read_workspace(workspace, pbar):
             projects = sorted(
-                g.STATE.assets_api.project.get_list(workspace.id), key=lambda x: x.name
+                g.STATE.assets_api.project.get_list(workspace.id),
+                key=lambda x: x.name,
             )
 
             workspace_data = []
@@ -262,6 +260,14 @@ def read_assets():
             g.STATE.ASSETS.data[workspace.name] = workspace_data
 
             pbar.update(1)
+
+        sly.logger.debug(
+            f"Will use {g.MAX_WORKERS} workers to read the primitives from the Assets."
+        )
+
+        with ThreadPoolExecutor(max_workers=g.MAX_WORKERS) as executor:
+            for workspace in workspaces:
+                executor.submit(read_workspace, workspace, pbar)
 
     sly.logger.info(
         f"Successfully read {len(g.STATE.ASSETS.data)} workspaces with primitives and saved them to the state."
