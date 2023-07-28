@@ -1,31 +1,31 @@
 {
-  "name": "Flying objects",
-  "type": "app",
-  "categories": [
-    "neural network",
-    "images",
-    "object detection",
-    "semantic segmentation",
-    "instance segmentation",
-    "nn tools",
-    "synthetic",
-    "data operations"
-  ],
-  "description": "Generate synthetic data: flying foregrounds on top of backgrounds",
-  "docker_image": "supervisely/base-py-sdk:6.35.0",
-  "instance_version": "6.4.57",
-  "main_script": "src/main.py",
-  "gui_template": "src/gui.html",
-  "task_location": "workspace_tasks",
-  "isolate": true,
-  "icon": "https://img.icons8.com/color/100/000000/snitch.png",
-  "icon_background": "#FFFFFF",
-  "context_menu": {
-    "target": [
-      "images_project"
+    "name": "Flying objects",
+    "type": "app",
+    "categories": [
+        "neural network",
+        "images",
+        "object detection",
+        "semantic segmentation",
+        "instance segmentation",
+        "nn tools",
+        "synthetic",
+        "data operations"
     ],
-    "context_category": "Synthetic data"
-  },
-  "poster": "https://user-images.githubusercontent.com/106374579/182824459-291c34dc-0a5a-4c97-a297-d1ed4143c58d.png",
-  "community_agent": false
+    "description": "Generate synthetic data: flying foregrounds on top of backgrounds",
+    "docker_image": "supervisely/synthetic:0.0.1",
+    "instance_version": "6.4.57",
+    "main_script": "src/main.py",
+    "gui_template": "src/gui.html",
+    "task_location": "workspace_tasks",
+    "isolate": true,
+    "icon": "https://img.icons8.com/color/100/000000/snitch.png",
+    "icon_background": "#FFFFFF",
+    "context_menu": {
+        "target": [
+            "images_project"
+        ],
+        "context_category": "Synthetic data"
+    },
+    "poster": "https://user-images.githubusercontent.com/106374579/182824459-291c34dc-0a5a-4c97-a297-d1ed4143c58d.png",
+    "community_agent": false
 }
