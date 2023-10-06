@@ -177,7 +177,18 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
             continue
 
         try:
-            aug.place_fg_to_bg(label_img, label_mask, res_image, origin[0], origin[1])
+            settings = augs["objects"]
+            edge_smoothing_ksize = random.randint(*settings["edge_smoothing_ksize"])
+            opacity = random.uniform(*settings["opacity"])
+            aug.place_fg_to_bg(
+                label_img,
+                label_mask,
+                res_image,
+                origin[0],
+                origin[1],
+                edge_smoothing_ksize=edge_smoothing_ksize,
+                opacity=opacity
+            )
             geometry.draw(cover_img, color=idx)
 
             for object_idx, diff in difference.items():

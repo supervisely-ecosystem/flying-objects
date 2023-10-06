@@ -3,6 +3,7 @@ import random
 import imgaug.augmenters as iaa
 from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 from ast import literal_eval
+import numpy as np
 import supervisely as sly
 import albumentations as A
 
@@ -130,8 +131,28 @@ def resize_foreground_to_fit_into_image(dest_image, image, mask):
         return image, mask
 
 
-def place_fg_to_bg(fg, fg_mask, bg, x, y):
+def place_fg_to_bg(
+        fg: np.ndarray,
+        fg_mask: np.ndarray, 
+        bg: np.ndarray, 
+        x: int, 
+        y: int, 
+        edge_smoothing_ksize: int = 0, 
+        opacity: float = 1.0
+    ):
     sec_h, sec_w, _ = fg.shape
-    secondary_object = cv2.bitwise_and(fg, fg_mask)
-    secondary_bg = 255 - fg_mask
-    bg[y:y+sec_h, x:x+sec_w, :] = cv2.bitwise_and(bg[y:y+sec_h, x:x+sec_w, :], secondary_bg) + secondary_object
+    bg_crop = bg[y:y+sec_h, x:x+sec_w, :]
+
+    # Blur the edges of the mask
+    if edge_smoothing_ksize > 0:
+        if edge_smoothing_ksize % 2 == 0:
+            edge_smoothing_ksize += 1  # kernel size must be an odd number
+        fg_mask = cv2.GaussianBlur(fg_mask, (edge_smoothing_ksize, edge_smoothing_ksize), 0)
+
+    # Normalize to [0, 1] and apply opacity
+    fg_mask = fg_mask / 255. * opacity
+
+    # Blend the images
+    combined_crop = (fg * fg_mask) + (bg_crop * (1 - fg_mask))
+
+    bg[y:y+sec_h, x:x+sec_w, :] = combined_crop

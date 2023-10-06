@@ -4,6 +4,8 @@
 objects:
   count: [1, 5] # number of objects (range) per image for every class
   visibility: 0.8 # minimum visible object area (proportion), e.g. 0.8 - 80% of object area should be visible (not covered by any other objects)
+  edge_smoothing_ksize: [5, 9] # kernel size (range) for Gaussian Blur applied to objects mask
+  opacity: [0.8, 1.0] # range of opacity to make objects transparent
   augs:
     color:
       RandomBrightnessContrast: true
