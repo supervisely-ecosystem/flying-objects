@@ -29,6 +29,9 @@ e.g: foreground class: lemon (polygon or mask), and background class: lemon (pol
 
 For example, if object on background image is labeled with bounding box and we copy-paste random foreground object on top of it then it will be impossible to validate background object visibility. If background object became invisible, its label have to be removed from results to make sure that resulting training data is 100% accurate. But for shapes like bounding box it is impossible to do. That is the reason why original labels on both foregrounds and backgrounds have to be polygons or masks.
 
+**Updates:**
+- 2023/10/06, v1.2.6 - Objects can be genertated with Edge Smoothing and Opacity.
+
 
 
 # How To Use
