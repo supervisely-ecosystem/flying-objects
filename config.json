@@ -12,7 +12,7 @@
         "data operations"
     ],
     "description": "Generate synthetic data: flying foregrounds on top of backgrounds",
-    "docker_image": "supervisely/synthetic:0.0.5",
+    "docker_image": "supervisely/synthetic:6.73.22",
     "instance_version": "6.4.57",
     "main_script": "src/main.py",
     "gui_template": "src/gui.html",
