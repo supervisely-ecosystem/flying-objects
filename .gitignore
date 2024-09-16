@@ -2,6 +2,7 @@
 .idea
 *.mp4
 venv
+.venv
 supervisely_lib
 src/__pycache__
 images/*
