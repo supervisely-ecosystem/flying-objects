@@ -1,4 +1,4 @@
-# spacial augmentations are taken from ImgAug, color - from Albumentations
+# spatial augmentations are taken from ImgAug, color - from Albumentations
 # comment augmentation to disable it
 
 objects:
@@ -11,14 +11,21 @@ objects:
       RandomBrightnessContrast: true
       CLAHE: true
       Blur: true
-    spacial:
+    spatial:
       Fliplr: 0.5 # probability
       Flipud: 0.5 # probability
       Rotate: (-90, 90)
       #ElasticTransformation:
       #  alpha: (0, 40)
       #  sigma: (4, 8)
-      Resize: (0.8, 1.5) # Resize to something between 80 and 150% of its original size
+
+      # Use only one of the following resize options: 
+      # 1. Resize to something between 80 and 150% of its original size
+      Resize: (0.8, 1.5)
+      # 2. Resize to exact size in pixels, with an option to maintain aspect ratio (use "keep-aspect-ratio" only in width or height, not both)
+      # Resize: 
+        # width: (100, 200)  # Pixel range for the width or "keep-aspect-ratio"
+        # height: (100, 200) # Pixel range for the height or "keep-aspect-ratio"
 
 # Background image augmentations (coming soon)
 # background: false

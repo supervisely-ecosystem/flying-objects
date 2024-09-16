@@ -13,9 +13,12 @@ sly.logger.info(f'PYTHONPATH={os.environ.get("PYTHONPATH", "")}')
 
 # order matters
 # from dotenv import load_dotenv
+ 
 # load_dotenv(os.path.join(app_root_directory, "secret_debug.env"))
 # load_dotenv(os.path.join(app_root_directory, "debug.env"))
 
+# load_dotenv("debug.env")
+# load_dotenv(os.path.expanduser("~/supervisely.env"))
 
 app: AppService = AppService()
 
@@ -53,3 +56,6 @@ empty_gallery = {
         "opacity": 0.5,
     },
 }
+
+use_exact_resize = False
+exact_resize_values = {}
