@@ -80,7 +80,7 @@ def init_spatial_augs(data):
         if key == "Rotate":
             a = iaa.Rotate(rotate=parsed_value, fit_output=True)
         else:
-            if parsed_value == (0, 0):
+            if any([not(value > 0) for value in parsed_value]):
                 sly.logger.warn("Cannot resize image to 0% of its original size, skipping")
                 continue
             a = name_func_spatial[key](parsed_value)
