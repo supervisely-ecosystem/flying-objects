@@ -80,6 +80,9 @@ def init_spatial_augs(data):
         if key == "Rotate":
             a = iaa.Rotate(rotate=parsed_value, fit_output=True)
         else:
+            if parsed_value == (0, 0):
+                sly.logger.warn("Cannot resize image to 0% of its original size, skipping")
+                continue
             a = name_func_spatial[key](parsed_value)
         augs.append(a)
     aug_spatial_fg = iaa.Sequential(augs, random_order=True)
