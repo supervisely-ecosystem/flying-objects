@@ -161,7 +161,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
                 new_area = objects_area[object_idx]['current'] - diff
                 visibility_portion = new_area / objects_area[object_idx]['original']
                 if visibility_portion < visibility_threshold:
-                    #sly.logger.warn(f"Object '{idx}', attempt {attempt + 1}: "
+                    #sly.logger.warning(f"Object '{idx}', attempt {attempt + 1}: "
                     #                f"visible portion ({visibility_portion}) < threshold ({visibility_threshold})")
                     allow_placement = False
                     break
@@ -173,7 +173,7 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
                 continue
 
         if find_place is False:
-            sly.logger.warn(f"Object '{idx}' is skipped: can not be placed to satisfy visibility threshold")
+            sly.logger.warning(f"Object '{idx}' is skipped: can not be placed to satisfy visibility threshold")
             continue
 
         try:
@@ -200,8 +200,8 @@ def synthesize(api: sly.Api, task_id, state, meta: sly.ProjectMeta, image_infos,
             res_labels.append(sly.Label(geometry, res_meta.get_obj_class(class_name)))
 
         except Exception as e:
-            #sly.logger.warn(repr(e))
-            sly.logger.warn(f"FG placement error:: label shape: {label_img.shape}; mask shape: {label_mask.shape}",
+            #sly.logger.warning(repr(e))
+            sly.logger.warning(f"FG placement error:: label shape: {label_img.shape}; mask shape: {label_mask.shape}",
                             extra={"error": repr(e)})
 
         progress.iter_done_report()

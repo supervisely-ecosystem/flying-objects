@@ -1,10 +1,11 @@
+from typing import Tuple
 import numpy as np
 import supervisely as sly
 from supervisely._utils import generate_free_name
 
 
 def postprocess(state, ann: sly.Annotation, cur_meta: sly.ProjectMeta, res_meta: sly.ProjectMeta) \
-        -> (sly.ProjectMeta, sly.Annotation):
+        -> Tuple[sly.ProjectMeta, sly.Annotation]:
     task_type = state["taskType"]
     if task_type == "seg":
         new_meta, new_ann = transform_for_segmentation(cur_meta, ann)
@@ -17,7 +18,7 @@ def postprocess(state, ann: sly.Annotation, cur_meta: sly.ProjectMeta, res_meta:
     return res_meta, new_ann
 
 
-def transform_for_detection(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.ProjectMeta, sly.Annotation):
+def transform_for_detection(meta: sly.ProjectMeta, ann: sly.Annotation) -> Tuple[sly.ProjectMeta, sly.Annotation]:
     new_classes = sly.ObjClassCollection()
     new_labels = []
     for label in ann.labels:
@@ -36,7 +37,7 @@ def transform_for_detection(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.
     return (res_meta, res_ann)
 
 
-def transform_for_segmentation(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.ProjectMeta, sly.Annotation):
+def transform_for_segmentation(meta: sly.ProjectMeta, ann: sly.Annotation) -> Tuple[sly.ProjectMeta, sly.Annotation]:
     new_classes = {}
     class_masks = {}
     for obj_class in meta.obj_classes:
@@ -61,7 +62,7 @@ def transform_for_segmentation(meta: sly.ProjectMeta, ann: sly.Annotation) -> (s
     return (res_meta, res_ann)
 
 
-def transform_for_instance_segmentation(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.ProjectMeta, sly.Annotation):
+def transform_for_instance_segmentation(meta: sly.ProjectMeta, ann: sly.Annotation) -> Tuple[sly.ProjectMeta, sly.Annotation]:
     new_classes = {}
     for obj_class in meta.obj_classes:
         obj_class: sly.ObjClass
@@ -79,7 +80,7 @@ def transform_for_instance_segmentation(meta: sly.ProjectMeta, ann: sly.Annotati
     return (res_meta, res_ann)
 
 
-def highlight_instances(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.ProjectMeta, sly.Annotation):
+def highlight_instances(meta: sly.ProjectMeta, ann: sly.Annotation) -> Tuple[sly.ProjectMeta, sly.Annotation]:
     new_classes = []
     new_labels = []
     for idx, label in enumerate(ann.labels):

@@ -5,26 +5,24 @@ from collections import defaultdict
 import supervisely as sly
 from supervisely.app.v1.app_service import AppService
 
-app_root_directory = os.path.dirname(os.getcwd())
+app_root_directory = os.getcwd()
 sys.path.append(app_root_directory)
 sys.path.append(os.path.join(app_root_directory, "src"))
 print(f"App root directory: {app_root_directory}")
 sly.logger.info(f'PYTHONPATH={os.environ.get("PYTHONPATH", "")}')
 
 # order matters
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
  
-# load_dotenv(os.path.join(app_root_directory, "secret_debug.env"))
-# load_dotenv(os.path.join(app_root_directory, "debug.env"))
-
-# load_dotenv("debug.env")
-# load_dotenv(os.path.expanduser("~/supervisely.env"))
+if sly.is_development():
+    load_dotenv(os.path.expanduser("~/supervisely.env"))
+    load_dotenv(os.path.join(app_root_directory, "debug.env"))
 
 app: AppService = AppService()
 
-team_id = int(os.environ["context.teamId"])
-workspace_id = int(os.environ["context.workspaceId"])
-project_id = int(os.environ["modal.state.slyProjectId"])
+team_id = sly.env.team_id()
+workspace_id = sly.env.workspace_id()
+project_id = sly.env.project_id()
 
 project_info = app.public_api.project.get_info_by_id(project_id)
 if project_info is None:

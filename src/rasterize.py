@@ -1,4 +1,6 @@
 import numpy as np
+from typing import Tuple
+
 import supervisely as sly
 
 
@@ -14,14 +16,14 @@ def allow_render_for_any_shape(lbl: sly.Label):
     return True
 
 
-def convert_to_nonoverlapping(meta: sly.ProjectMeta, ann: sly.Annotation) -> (sly.ProjectMeta, sly.Annotation):
+def convert_to_nonoverlapping(meta: sly.ProjectMeta, ann: sly.Annotation) -> Tuple[sly.ProjectMeta, sly.Annotation]:
     common_img = np.zeros(ann.img_size, np.int32)  # size is (h, w)
     for idx, lbl in enumerate(ann.labels, start=1):
         if need_convert(lbl.obj_class.geometry_type):
             if allow_render_for_any_shape(lbl) is True:
                 lbl.draw(common_img, color=idx)
             else:
-                sly.logger.warn(
+                sly.logger.warning(
                     "Object of class {!r} (shape: {!r}) has non spatial shape {!r}. It will not be rendered."
                         .format(lbl.obj_class.name,
                                 lbl.obj_class.geometry_type.geometry_name(),

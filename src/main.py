@@ -50,7 +50,7 @@ def preview(api: sly.Api, task_id, context, state, app_logger):
         g.bg_meta = sly.ProjectMeta.from_json(api.project.get_meta(state["bgProjectId"]))
 
     if len(bg_images) == 0:
-        sly.logger.warn("There are no background images")
+        sly.logger.warning("There are no background images")
     else:
         cache_dir = os.path.join(g.app.data_dir, "cache_images_preview")
         sly.fs.mkdir(cache_dir)
@@ -92,7 +92,7 @@ def generate(api: sly.Api, task_id, context, state, app_logger):
     bg_images = update_bg_images(api, state)
 
     if len(bg_images) == 0:
-        sly.logger.warn("There are no background images")
+        sly.logger.warning("There are no background images")
     else:
         cache_dir = os.path.join(g.app.data_dir, "cache_images_generate")
         sly.fs.mkdir(cache_dir)

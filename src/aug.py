@@ -48,7 +48,7 @@ def init_color_augs(data):
     for key, value in data.items():
         for key, value in data.items():
             if key not in name_func_color:
-                sly.logger.warn(f"Aug {key} not found, skipped")
+                sly.logger.warning(f"Aug {key} not found, skipped")
                 continue
         augs.append(name_func_color[key]())
     aug_color_fg = A.Compose(augs)
@@ -64,7 +64,7 @@ def init_spatial_augs(data):
             augs.append(iaa.ElasticTransformation(alpha=alpha, sigma=sigma))
             continue
         if key not in name_func_spatial:
-            sly.logger.warn(f"Aug {key} not found, skipped")
+            sly.logger.warning(f"Aug {key} not found, skipped")
             continue
 
         parsed_value = value
@@ -80,8 +80,8 @@ def init_spatial_augs(data):
         if key == "Rotate":
             a = iaa.Rotate(rotate=parsed_value, fit_output=True)
         else:
-            if any([not(value > 0) for value in parsed_value]):
-                sly.logger.warn("Cannot resize image to 0% of its original size, skipping")
+            if key == "Resize" and any([not(value > 0) for value in parsed_value]):
+                sly.logger.warning("Cannot resize image to 0% of its original size, skipping")
                 continue
             a = name_func_spatial[key](parsed_value)
         augs.append(a)
