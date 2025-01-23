@@ -10,11 +10,11 @@
 </p>
 
 
-[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervise.ly/apps/flying-objects)
-[![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervise.ly/slack)
+[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervisely.com/apps/flying-objects)
+[![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervisely.com/slack)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/supervisely-ecosystem/flying-objects)
-[![views](https://app.supervise.ly/img/badges/views/supervisely-ecosystem/flying-objects.png)](https://supervise.ly)
-[![runs](https://app.supervise.ly/img/badges/runs/supervisely-ecosystem/flying-objects.png)](https://supervise.ly)
+[![views](https://app.supervisely.com/img/badges/views/supervisely-ecosystem/flying-objects.png)](https://supervisely.com)
+[![runs](https://app.supervisely.com/img/badges/runs/supervisely-ecosystem/flying-objects.png)](https://supervisely.com)
 
 </div>
 
@@ -44,7 +44,7 @@ For example, if object on background image is labeled with bounding box and we c
 
 <img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/flying-objects" src="https://i.imgur.com/wxe0fR7.png" width="300"/>   
 
-3. Label foregrounds with polygons or masks. You can use demo images from project [`Seeds`](https://ecosystem.supervise.ly/projects/seeds) from Ecosystem
+3. Label foregrounds with polygons or masks. You can use demo images from project [`Seeds`](https://ecosystem.supervisely.com/projects/seeds) from Ecosystem
 
 <img  data-key="sly-module-link" data-module-slug="supervisely-ecosystem/seeds" src="https://i.imgur.com/E5xmBRH.png" width="300"/>   
 
